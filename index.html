@@ -8,12 +8,11 @@
 </head>
 <body>
 <div id="crt" aria-hidden="true"></div>
-<header id="defcon"></header>
+<header id="topbar">
+  <div id="defcon"></div>
+  <div id="hud"></div>
+</header>
 <main id="app">
-  <section class="panel" id="statsPanel">
-    <h2>NATION STATUS</h2>
-    <div id="stats"></div>
-  </section>
   <section class="panel" id="centerPanel">
     <div id="cmdbar"></div>
     <nav id="tabs" aria-label="Actions"></nav>
@@ -21,9 +20,11 @@
     <h2 class="logTitle">EVENT LOG</h2>
     <div id="log" aria-live="polite"></div>
   </section>
-  <section class="panel" id="rankPanel">
+  <section class="panel" id="rightPanel">
     <h2>WORLD RANKING</h2>
     <div id="rank"></div>
+    <div class="panel-sub">NATION DETAIL</div>
+    <div id="detail"></div>
   </section>
 </main>
 <div id="factionOverlay" class="overlay"></div>

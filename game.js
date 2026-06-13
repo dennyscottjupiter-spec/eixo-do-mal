@@ -735,7 +735,7 @@ const REL_ICON={war:'⚔',alliance:'✦',vassal:'♟',master:'⛓',peace:'·'};
 function render(){
   if(!G || !G.started){ renderFactionOverlay(true); return; }
   renderFactionOverlay(false);
-  renderDefcon(); renderStats(); renderCmd(); renderTabs(); renderTabContent();
+  renderDefcon(); renderHud(); renderDetail(); renderCmd(); renderTabs(); renderTabContent();
   renderLog(); renderRank(); renderOver();
 }
 
@@ -748,23 +748,41 @@ function renderDefcon(){
     `<span class="dstat">${fb(P()).flag} ${nm(P()).toUpperCase()} · TURN <b>${G.turn}</b><span class="cursor"></span></span>`;
 }
 
-function renderStats(){
+/* renderHud — sticky top resource bar, redrawn every action */
+function renderHud(){
   const n=P(), inc=incomes(n), up=upkeep(n);
-  const dRow=(icon,name,val,delta)=>{
-    const cls=delta>=0?'g':'r', sign=delta>=0?'+':'−';
-    return `<div class="kv"><span>${icon} ${name}</span><span>${fmt(val)} <span class="${cls}">${sign}${fmt(Math.abs(delta))}</span></span></div>`;
+  const chip=(icon,val,delta)=>{
+    const cls=delta>=0?'g':'r', sign=delta>=0?'+':'';
+    return `<span class="hchip">${icon} <span class="hval">${fmt(val)}</span><span class="hdelta ${cls}">${sign}${fmt(delta)}</span></span>`;
   };
   let h='';
-  h+=`<div class="sec">RESOURCES /turn</div>`;
-  h+=dRow('💰','Gold',n.res.gold,inc.gold);
-  h+=dRow('🛢️','Oil',n.res.oil,inc.oil-up.oil);
-  h+=dRow('🌾','Food',n.res.food,inc.food-up.food);
-  h+=dRow('⚙️','Industry',n.res.industry,inc.ind);
-  h+=`<div class="kv"><span>👥 Population</span><span>${fmt(n.res.pop)} <span class="dim">/${fmt(popCap(n))}</span></span></div>`;
-  if(!G.easy) h+=`<div class="kv"><span>🗺 Land</span><span>${fmt(totalBuildings(n))}/${fmt(n.land)} <span class="dim">acres</span></span></div>`;
-  h+=`<div class="kv"><span class="dim">Industry mult.</span><span class="dim">×${industryMult(n).toFixed(2)}</span></div>`;
-  h+=`<div class="sec">MORALE</div>`;
-  h+=`<div>${n.morale} <span class="bar dim">[${asciiBar(n.morale,150,12)}]</span>${n.oilShort?' <span class="r">OIL SHORT</span>':''}</div>`;
+  h+=chip('💰',n.res.gold,Math.round(inc.gold));
+  h+=`<span class="hud-sep">|</span>`;
+  h+=chip('🛢️',n.res.oil,Math.round(inc.oil-up.oil));
+  if(n.oilShort) h+=`<span class="oilshort-badge">OIL!</span>`;
+  h+=`<span class="hud-sep">|</span>`;
+  h+=chip('🌾',n.res.food,Math.round(inc.food-up.food));
+  h+=`<span class="hud-sep">|</span>`;
+  h+=chip('⚙️',n.res.industry,Math.round(inc.ind));
+  h+=`<span class="hud-sep">|</span>`;
+  h+=`<span class="hchip">👥 <span class="hval">${fmt(n.res.pop)}</span><span class="hdelta dim">/${fmt(popCap(n))}</span></span>`;
+  if(!G.easy){
+    h+=`<span class="hud-sep">|</span>`;
+    h+=`<span class="hchip">🗺 <span class="hval">${fmt(freeLand(n))}</span><span class="hdelta dim"> free ac.</span></span>`;
+  }
+  h+=`<span class="hud-sep">|</span>`;
+  h+=`<span class="hchip dim">⚔ <span class="hval">${fmt(atkPower(n,n.army))}</span></span>`;
+  h+=`<span class="hud-sep">·</span>`;
+  h+=`<span class="hchip dim">🛡 <span class="hval">${fmt(defPower(n))}</span></span>`;
+  h+=`<span class="hud-sep">|</span>`;
+  h+=`<span class="hchip"><span class="dim">morale </span><span class="bar dim">[${asciiBar(n.morale,150,8)}]</span> <span class="hval">${n.morale}</span></span>`;
+  $('hud').innerHTML=h;
+}
+
+/* renderDetail — forces + structures in the right panel */
+function renderDetail(){
+  const n=P();
+  let h='';
   h+=`<div class="sec">ARMED FORCES</div>`;
   h+=`<div class="kv"><span>Infantry</span><span>${fmt(n.army.infantry)}</span></div>`;
   h+=`<div class="kv"><span>Tanks</span><span>${fmt(n.army.tank)}</span></div>`;
@@ -773,15 +791,16 @@ function renderStats(){
   h+=`<div class="kv"><span>Spies</span><span>${fmt(n.army.spy)}</span></div>`;
   h+=`<div class="kv"><span>SCUD Missiles</span><span>${fmt(n.army.scud)}</span></div>`;
   h+=`<div class="kv"><span>☢ Warheads</span><span>${fmt(n.army.warhead)}</span></div>`;
-  h+=`<div class="kv dim"><span>Troop capacity</span><span>${fmt(troopCnt(n))}/${fmt(troopCap(n))}</span></div>`;
-  h+=`<div class="kv dim"><span>Attack / Defense</span><span>${fmt(atkPower(n,n.army))} / ${fmt(defPower(n))}</span></div>`;
+  h+=`<div class="kv dim"><span>Capacity</span><span>${fmt(troopCnt(n))}/${fmt(troopCap(n))}</span></div>`;
+  h+=`<div class="kv dim"><span>Atk / Def</span><span>${fmt(atkPower(n,n.army))} / ${fmt(defPower(n))}</span></div>`;
   h+=`<div class="sec">STRUCTURES</div>`;
   for(const k in n.b) h+=`<div class="kv"><span>${CONFIG.buildings[k].i} ${CONFIG.buildings[k].n}</span><span>${n.b[k]}</span></div>`;
+  h+=`<div class="kv dim" style="margin-top:4px"><span>Industry ×</span><span>${industryMult(n).toFixed(2)}</span></div>`;
   if(hasTech(n,'nuclearPhysics')){
-    h+=`<div class="sec">☢ NUCLEAR PROGRAM</div>`;
+    h+=`<div class="sec">☢ NUCLEAR</div>`;
     h+=`<div class="dim">[${asciiBar(n.nukeProg,CONFIG.warhead.researchNeeded,12)}] ${n.nukeProg}/${CONFIG.warhead.researchNeeded}</div>`;
   }
-  $('stats').innerHTML=h;
+  $('detail').innerHTML=h;
 }
 
 function renderCmd(){
