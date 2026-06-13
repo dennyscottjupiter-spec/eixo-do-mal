@@ -450,6 +450,7 @@ const H = {
   helpFromMenu:()=>{ $('menuOverlay').classList.add('hidden'); renderHelp(); },
   firstMoves:()=>renderFirstMoves(),
   firstMovesFromMenu:()=>{ $('menuOverlay').classList.add('hidden'); renderFirstMoves(); },
+  setTheme:(p)=>{ applyTheme(p); render(); },
   closeOverlay:()=>{
     $('menuOverlay').classList.add('hidden');
     $('helpOverlay').classList.add('hidden');

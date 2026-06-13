@@ -199,6 +199,63 @@ img.emoji{height:1em;width:1.25em;margin:0 .08em;vertical-align:-0.15em;display:
 .statab td:first-child{text-align:left}
 .statab tr.me td{color:var(--amber-hi);font-weight:bold}
 .statab tr.dead td{color:#4d4434}
+/* ============ THEME PICKER WIDGET ============ */
+.theme-pick{display:flex;gap:6px;margin:10px 0 2px}
+.tpick{
+  font:inherit;background:transparent;color:var(--amber-dim);
+  border:1px solid var(--line);padding:2px 10px;cursor:pointer;
+  text-shadow:inherit;letter-spacing:1px;font-size:12px;
+}
+.tpick:hover:not(.on){color:var(--amber);border-color:var(--amber-dim)}
+.tpick.on{
+  color:var(--amber-hi);border-color:var(--amber-hi);
+  background:rgba(240,192,64,.08);
+  text-shadow:0 0 8px rgba(240,192,64,.4);
+}
+/* ============ NASA MISSION CONTROL THEME ============ */
+body.theme-nasa{
+  --bg:#020a18;--panel:#030c1e;--panel2:#041020;--line:#0d2d54;
+  background-color:#020a18;
+  background-image:
+    radial-gradient(1.3px 1.3px at  15px 23px,#ffffff,transparent),
+    radial-gradient(1.1px 1.1px at  73px  8px,rgba(200,225,255,.9),transparent),
+    radial-gradient(1.2px 1.2px at 138px 51px,#ffffff,transparent),
+    radial-gradient(1.0px 1.0px at 201px 17px,rgba(255,245,200,.9),transparent),
+    radial-gradient(1.3px 1.3px at 264px 70px,#ffffff,transparent),
+    radial-gradient(1.1px 1.1px at 326px 36px,rgba(200,225,255,.8),transparent),
+    radial-gradient(1.2px 1.2px at 389px 81px,#ffffff,transparent),
+    radial-gradient(0.7px 0.7px at  41px 87px,rgba(255,255,255,.45),transparent),
+    radial-gradient(0.6px 0.6px at 109px 44px,rgba(200,225,255,.40),transparent),
+    radial-gradient(0.7px 0.7px at 176px  6px,rgba(255,255,255,.50),transparent),
+    radial-gradient(0.6px 0.6px at 243px 93px,rgba(255,255,255,.40),transparent),
+    radial-gradient(0.7px 0.7px at 308px 29px,rgba(200,225,255,.45),transparent),
+    radial-gradient(0.6px 0.6px at 357px 68px,rgba(255,255,255,.38),transparent),
+    radial-gradient(ellipse 55% 45% at 18% 60%,rgba(0,45,130,.18) 0%,transparent 65%),
+    radial-gradient(ellipse 40% 55% at 82% 28%,rgba(0,25,100,.13) 0%,transparent 65%);
+  background-size:
+    400px 100px,400px 100px,400px 100px,400px 100px,
+    400px 100px,400px 100px,400px 100px,
+    400px 100px,400px 100px,400px 100px,
+    400px 100px,400px 100px,400px 100px,
+    100% 100%,100% 100%;
+  background-repeat:
+    repeat,repeat,repeat,repeat,repeat,repeat,repeat,
+    repeat,repeat,repeat,repeat,repeat,repeat,
+    no-repeat,no-repeat;
+  animation:nasaStarDrift 22s linear infinite;
+}
+@keyframes nasaStarDrift{
+  from{background-position:
+    0 0,   0 0,   0 0,   0 0,   0 0,   0 0,   0 0,
+    0 0,   0 0,   0 0,   0 0,   0 0,   0 0,
+    50% 50%,50% 50%}
+  to{background-position:
+    0 100px,0 100px,0 100px,0 100px,0 100px,0 100px,0 100px,
+    0 100px,0 100px,0 100px,0 100px,0 100px,0 100px,
+    50% 50%,50% 50%}
+}
+body.theme-nasa .overlay,body.theme-nasa #factionOverlay{background:rgba(2,10,25,.90)}
+@media(prefers-reduced-motion:reduce){body.theme-nasa{animation:none}}
 /* ============ MOBILE ============ */
 @media (max-width:840px){
   body{overflow:auto;height:auto}

@@ -432,8 +432,12 @@ Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nation
       : 'DISABLED — full game: land, tech, spies, diplomacy, nukes, AI wars'}</span>
   </span>
 </button>
-<div style="margin:8px 0 4px;display:flex;gap:8px;flex-wrap:wrap">
-  <button class="btn cy" data-a="firstMoves" title="See the 6 best opening moves with a one-line reason each — great for your first game.">📋 FIRST MOVES</button>
+<div class="theme-pick">
+  <button class="tpick${(localStorage.getItem('eixo-theme')||'amber')==='amber'?' on':''}" data-a="setTheme" data-p="amber" title="Classic amber phosphor terminal — the original CRT look.">🟠 AMBER CRT</button>
+  <button class="tpick${(localStorage.getItem('eixo-theme')||'amber')==='nasa'?' on':''}" data-a="setTheme" data-p="nasa" title="NASA Mission Control — deep-space starfield with drifting stars behind the start panel.">🚀 NASA</button>
+</div>
+<div style="margin:4px 0 4px;display:flex;gap:8px;flex-wrap:wrap">
+  <button class="btn cy" data-a="firstMoves" title="See the phased 10-turn opening guide — great for your first game.">📋 FIRST MOVES</button>
 </div>
 <div class="sec">SELECT YOUR NATION${UI.mode==='easy'?' <span class="g">· EASY</span>':''}</div>
 <div class="fgrid">${cards}</div>
