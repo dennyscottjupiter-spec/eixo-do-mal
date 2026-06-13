@@ -1,29 +1,42 @@
 # EIXO DO MAL — World Domination Terminal
 
-A single-file, retro **amber-phosphor terminal** strategy game. Six rogue nations, one throne: explore for land, build your economy, train an army, run covert ops, climb the tech tree to the bomb — and dominate the Axis.
+A 2003-style amber-phosphor text terminal strategy game. Six rogue nations, one throne. Build, spy, invade, nuke.
 
-It's an homage to the early-2000s **text-based browser war MMO** genre (think *Earth 2025*): turns, an acres/land economy, a public market, spies, and a Networth ladder.
+## How to play locally
 
-## Play
+Double-click `index.html` — no server needed (plain `<script src>`).
 
-No build, no dependencies, no server. Just open **[`eixo-do-mal.html`](eixo-do-mal.html)** in any modern browser.
+**Keyboard shortcuts**
+- `Enter` — end turn
+- `↑↑↓↓←→←→BA` (Konami code) — +9,999 gold cheat
 
-## Two ways to play
+## How to deploy to GitHub Pages
 
-- **🎓 Easy Mode** — a peaceful sandbox to learn the core loop: just *build, train, attack*. Rivals never invade; no land management, tech, spies, market, diplomacy, or nukes. Win by reaching $60k networth as #1 (or wiping out every rival).
-- **⚔ Normal** — the full game: land/acres, the black market, the tech tree, espionage, diplomacy, the Manhattan-do-Mal nuclear project, and an AI coalition that turns on you if you dominate too long.
+1. Push this repo to GitHub.
+2. Go to **Settings → Pages → Source** and set the branch to `master` / `main`, folder `/` (root).
+3. GitHub Pages will serve `index.html` at `https://<user>.github.io/<repo>/`.
 
-## Win conditions (Normal)
+The `.nojekyll` file in this repo tells GitHub Pages to skip Jekyll processing, which keeps asset paths clean.
 
-- **Nuclear victory** — detonate a warhead while you're the world's #1 power.
-- **Domination victory** — control 4 of the 6 nations (you + your vassals + allies).
+## File structure
 
-## Mechanics at a glance
+```
+index.html   — markup only (links to styles.css + game.js)
+styles.css   — amber CRT design tokens, layout, widgets
+game.js      — entire game engine: CONFIG, economy, combat, AI, rendering
+.nojekyll    — empty; prevents GitHub Pages Jekyll build
+```
 
-`EXPLORE` claims acres · buildings consume land · victorious ground assaults **seize enemy acres** · turrets are cheap static defense · the black market converts oil/food ↔ gold · spies steal, sabotage, gather intel, or kill population.
+## Win conditions
 
-> 🎮 Tip: there's a classic cheat code hidden in there somewhere.
+| Mode | Condition |
+|------|-----------|
+| Normal — Domination | You + vassals + allies ≥ 4 of 6 nations |
+| Normal — Nuclear | Deploy warhead while ranked #1 |
+| Easy | Reach $60,000 networth as #1, or eliminate all rivals |
 
----
+## Architecture (quick ref)
 
-*Single self-contained HTML file — all engine, CSS, and UI inline. See [`CLAUDE.md`](CLAUDE.md) for architecture notes.*
+`game.js` is organized as 8 explicitly-commented layers: CONFIG → Economy → Combat → Shared helpers → AI → Player handlers → Rendering → Wiring. Read the file top-to-bottom — each layer builds on the last.
+
+See `CLAUDE.md` for the full developer guide.
