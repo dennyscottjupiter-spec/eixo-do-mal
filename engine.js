@@ -217,6 +217,11 @@ function doBuild(n,key){
   const b=CONFIG.buildings[key];
   if(!buildCostOk(n,key)) return false;
   n.res.gold-=b.g; n.res.industry-=b.ind; n.b[key]++;
+  if(!n.isPlayer){
+    if(!n._ann) n._ann={};
+    if(key==='lab' && !n._ann.lab){ n._ann.lab=true; log('intel',`📡 Intel: ${nm(n)} has completed a Research Lab — the tech tree is now open to them.`); }
+    if(key==='nuclearFacility' && !n._ann.nf){ n._ann.nf=true; log('intel',`☢ ALERT: ${nm(n)} has completed a Nuclear Facility — their warhead program is now active.`); }
+  }
   return true;
 }
 function unitGoldCost(n,key){
@@ -411,6 +416,12 @@ function endTurn(){
     }
   }
   for(const n of G.nations) if(!n.isPlayer&&n.alive) aiMacro(n);
+  // surface curated rival highlights: new #1, major tech milestone
+  if(!G.over){ for(const n of G.nations.filter(x=>!x.isPlayer&&x.alive)){
+    const r=rankOf(n); const was=n._lastRank||99;
+    if(r===1 && was!==1 && rankOf(P())!==1) log('intel',`📡 ${nm(n)} has risen to #1 on the world ranking — they are now the dominant power.`);
+    n._lastRank=r;
+  }}
   // coalition pressure: dominate too long and the world turns on you (disabled in easy mode)
   if(!G.over && !G.easy){
     if(rankOf(P())===1){ G.streak++; } else G.streak=0;
