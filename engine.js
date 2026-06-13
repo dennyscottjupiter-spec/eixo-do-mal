@@ -397,7 +397,7 @@ function afterAction(){ aiMicro(); checkAll(); render(); }
 
 function endTurn(){
   if(G.over) return;
-  for(const n of G.nations) n.hitThisCycle=0;
+  for(const n of G.nations){ n.hitThisCycle=0; n.opsThisTurn={}; }
   for(const n of G.nations) if(n.alive) econTick(n);
   // vassal tribute: 10% of vassal gold flows to the master each turn
   for(const n of G.nations){
@@ -531,13 +531,20 @@ const H = {
   target:(p)=>{ UI.attackTarget=p; render(); },
   attack:(p)=>{
     const t=byId(UI.attackTarget); if(!t||!t.alive) return;
+    const ops=(P().opsThisTurn[t.id]||0);
+    if(ops>=CONFIG.maxOpsPerTarget){
+      log('war',`⚔️ ${nm(t)} is on HIGH ALERT — you have hit them ${ops} times this turn. Wait until next turn to attack again.`);
+      render(); return;
+    }
     if(!spend(2)) return;
+    P().opsThisTurn[t.id]=(ops)+1;
     resolveAttack(P(),t,parseInt(p,10)/100);
     afterAction();
   },
   scud:()=>{
     const t=byId(UI.attackTarget); if(!t||!t.alive||P().army.scud<1) return;
     if(!spend(1)) return;
+    P().opsThisTurn[t.id]=(P().opsThisTurn[t.id]||0)+1;
     scudStrike(P(),t);
     afterAction();
   },
@@ -551,7 +558,13 @@ const H = {
   /* ---- espionage ---- */
   spy:(p,q)=>{
     const t=byId(p); if(!t||!t.alive) return;
+    const ops=(P().opsThisTurn[t.id]||0);
+    if(ops>=CONFIG.maxOpsPerTarget){
+      log('spy',`🕶️ ${nm(t)} is on HIGH ALERT — your network is burned there this turn. Try a different target or end your turn.`);
+      render(); return;
+    }
     if(!spend(1)) return;
+    P().opsThisTurn[t.id]=(ops)+1;
     spyMission(P(),t,q);
     afterAction();
   },

@@ -311,9 +311,11 @@ function renderTabContent(){
       h+=`<div class="sec">SELECT TARGET — attack costs 2 actions</div>`;
       for(const x of targetsOf()){
         const r=rel(me,x), block=['alliance','vassal'].includes(r);
-        const tltip=block?`${nm(x)} is your ${r} — you cannot attack allies or vassals.`:`${nm(x)} (ranked #${rankOf(x)}) — click ENGAGE to plan an assault. Run SPY → INTEL first to reveal their army and gold.`;
-        h+=`<div class="row"><span class="grow" title="${tltip}">${fb(x).flag} <b>${nm(x)}</b> <span class="dim">#${rankOf(x)}</span> ${REL_ICON[r]||''}<br>${intelStr(x)}</span>`+
-           `<button class="btn warn" data-a="target" data-p="${x.id}" title="${block?`Cannot attack — they are your ${r}`:`Select ${nm(x)} as your attack target`}" ${block?'disabled':''}>${block?(r==='vassal'?'VASSAL':'ALLY'):'ENGAGE ▸'}</button></div>`;
+        const atkOps=(P().opsThisTurn&&P().opsThisTurn[x.id])||0;
+        const atkCap=atkOps>=CONFIG.maxOpsPerTarget;
+        const tltip=block?`${nm(x)} is your ${r} — you cannot attack allies or vassals.`:atkCap?`${nm(x)} is on HIGH ALERT — already hit ${atkOps} times this turn. Wait for next turn.`:`${nm(x)} (ranked #${rankOf(x)}) — click ENGAGE to plan an assault. Run SPY → INTEL first to reveal their army and gold.`;
+        h+=`<div class="row"><span class="grow" title="${tltip}">${fb(x).flag} <b>${nm(x)}</b> <span class="dim">#${rankOf(x)}</span> ${REL_ICON[r]||''}${atkCap?' <span class="r">· HIGH ALERT</span>':''}<br>${intelStr(x)}</span>`+
+           `<button class="btn warn" data-a="target" data-p="${x.id}" title="${block?`Cannot attack — they are your ${r}`:atkCap?`${nm(x)} is on high alert — wait until next turn`:`Select ${nm(x)} as your attack target`}" ${(block||atkCap)?'disabled':''}>${block?(r==='vassal'?'VASSAL':'ALLY'):atkCap?'ALERT':'ENGAGE ▸'}</button></div>`;
       }
       if(!targetsOf().length) h+=`<div class="muted">No nations left to attack. You are alone among the ruins.</div>`;
     } else {
@@ -333,11 +335,13 @@ function renderTabContent(){
     for(const x of targetsOf()){
       const hasIntel=P().intel[x.id]!==undefined&&(G.turn-P().intel[x.id])<=5;
       const spyLtip=hasIntel?`Intel on ${nm(x)} is current — army, gold, and buildings are visible. Run ops below.`:`Run covert ops against ${nm(x)}. ??? means no intel yet — use INTEL first to reveal their army, gold, and buildings.`;
-      h+=`<div class="row"><span class="grow" title="${spyLtip}">${fb(x).flag} <b>${nm(x)}</b><br>${intelStr(x)}</span>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="steal" title="Spies steal 5–15% of ${nm(x)}'s gold and transfer it to you." ${G.actions<1?'disabled':''}>STEAL</button>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="sabotage" title="Saboteurs blow up one of ${nm(x)}'s buildings." ${G.actions<1?'disabled':''}>SABOTAGE</button>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="killpop" title="Poison the water supply — kills 5–13% of ${nm(x)}'s population." ${G.actions<1?'disabled':''}>KILL POP</button>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="intel" title="Get a full report on ${nm(x)}'s army, gold, and buildings. Valid for 5 turns." ${G.actions<1?'disabled':''}>INTEL</button></div>`;
+      const opsOnX=(P().opsThisTurn&&P().opsThisTurn[x.id])||0;
+      const atCap=opsOnX>=CONFIG.maxOpsPerTarget;
+      h+=`<div class="row"><span class="grow" title="${spyLtip}">${fb(x).flag} <b>${nm(x)}</b>${atCap?' <span class="r">· HIGH ALERT ('+opsOnX+'/'+CONFIG.maxOpsPerTarget+' ops)</span>':''}<br>${intelStr(x)}</span>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="steal" title="Spies steal 5–15% of ${nm(x)}'s gold and transfer it to you." ${(G.actions<1||atCap)?'disabled':''}>STEAL</button>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="sabotage" title="Saboteurs blow up one of ${nm(x)}'s buildings." ${(G.actions<1||atCap)?'disabled':''}>SABOTAGE</button>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="killpop" title="Poison the water supply — kills 5–13% of ${nm(x)}'s population." ${(G.actions<1||atCap)?'disabled':''}>KILL POP</button>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="intel" title="Get a full report on ${nm(x)}'s army, gold, and buildings. Valid for 5 turns." ${(G.actions<1||atCap)?'disabled':''}>INTEL</button></div>`;
     }
   }
   else if(UI.tab==='tech'){

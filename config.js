@@ -51,6 +51,7 @@ const CONFIG = {
     { id:'icbm',           tier:4, n:'ICBM Program',         g:8000, d:'warhead becomes deployable', req:'nuclearPhysics' }
   ],
   warhead: { researchNeeded:50, g:5000, oil:100 },
+  maxOpsPerTarget: 3,   // max hostile ops (spy + ground assault) against one nation per turn
   // AI personality weight profiles. ratio = attack when myPower >= ratio × targetDefense.
   profiles: {
     aggressive:{ build:{barracks:3,oilField:2,farm:1.5,bank:1,factory:1,bunker:.5,lab:.3},
@@ -103,7 +104,7 @@ function newNation(faction,isPlayer,personality){
     b:{ oilField:2, farm:3, factory:2, bank:1, barracks:1, bunker:1, lab:0, nuclearFacility:0 },
     army:{ infantry:50, tank:5, jet:0, spy:5, turret:10, scud:0, warhead:0 },
     techs:[], morale:100, relations:{}, intel:{}, nukeProg:0,
-    oilShort:false, lastAttackedBy:null, hitThisCycle:0, debt:0
+    oilShort:false, lastAttackedBy:null, hitThisCycle:0, debt:0, opsThisTurn:{}
   };
 }
 
