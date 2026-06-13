@@ -55,6 +55,8 @@ The four JS files map 1-to-1 to the 8 layer comments inside them. Read layers to
 - `renderDefcon`, `renderHud`, `renderDetail`, `renderCmd`, `renderTabs`, `renderTabContent` — the main game panel.
 - `renderLog`, `renderRank` — sidebar/log.
 
+**Cross-file forward calls:** `render()` calls `renderFactionOverlay()` and `renderOver()` which are defined in screens.js (the last-loaded file). This is safe — all four scripts are fully parsed before any user interaction, so by the time `render()` runs these names are in scope. Similarly, `atkPower()` and `defPower()` are defined in engine.js (Layer 3) and called from render.js — expected in a shared-global-scope codebase.
+
 ### screens.js — Layer 8 (overlays, wiring, boot)
 All non-game screens and the DOM wiring live here:
 - `renderFactionOverlay()` — the **retro console boot menu**: DIFFICULTY row (4 buttons → `H.setDifficulty`), BACKGROUND row (AMBER/SPACE/NEON → `H.setTheme`), blinking INSERT NATION prompt, faction grid.
@@ -92,7 +94,7 @@ Three themes, all using CSS design tokens on `body.theme-X`:
 ### Key conventions when editing
 
 - **State → render, never DOM-first.** Mutate `G` then call `render()`. Never hand-patch DOM nodes.
-- **New player action = 3 edits:** add a handler to `H` (engine.js), emit a button with `data-a="yourKey"` in the appropriate render function, gate with `spend(n)` if it costs an action.
+- **New player action = 3 edits:** add a handler to `H` (engine.js), emit a button with `data-a="yourKey"` in the appropriate render function, gate with `spend(n)` if it costs an action. Exception: view-state-only handlers like `H.setDifficulty` and `H.setTheme` just update `UI.*` / call `applyTheme()` and `render()` — no `spend()`.
 - **New building/unit/tech/faction = a CONFIG entry** (config.js); render loops iterate `CONFIG` generically. New factions also need a `tip:` field and must use only the 6 wired bonus keys.
 - **Player is always `G.nations[0]`** (`P()`). Accessors: `nm()`, `fb()`, `byId()`, `rel()`.
 - **Win/lose flows through `checkDestroyed` → `checkAll`.** Never set `G.over` directly.
