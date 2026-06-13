@@ -417,6 +417,13 @@ function endTurn(){
       log('diplo','⚠️ WORLD ALERT: you have been ranked #1 for 5 turns. The rogue states are uniting against you — expect attacks from multiple nations.');
     }
   }
+  // IMF: accrue compound interest on player debt, then drift the rate
+  if((P().debt||0)>0){
+    const interest=Math.ceil(P().debt*(G.imfRate||0.08));
+    P().debt+=interest;
+    log('eco',`🏦 IMF: interest charged ${fmt(interest)} gold (rate ${((G.imfRate||0.08)*100).toFixed(1)}%). Outstanding debt: ${fmt(P().debt)} gold.`);
+  }
+  G.imfRate=clamp((G.imfRate||0.08)+(rnd()-0.5)*0.04,0.04,0.16);
   G.turn++; G.actions=CONFIG.actionsPerTurn;
   log('sys',`— TURN ${G.turn} — Your rivals have acted. You have ${CONFIG.actionsPerTurn} fresh actions.`);
   checkAll(); render();
@@ -598,6 +605,27 @@ const H = {
       setRel(me,t,'peace');
       log('diplo',`You dissolved the alliance with ${nm(t)}. Relations return to neutral peace.`);
     }
+    afterAction();
+  },
+  /* ---- IMF loans ---- */
+  loan:(p)=>{
+    const me=P(), amt=parseInt(p,10);
+    if(!amt||amt<=0){ log('sys','Invalid loan amount.'); render(); return; }
+    if((me.debt||0)+amt > score(me)*0.8){ log('sys','🏦 IMF REFUSES — you are already over-leveraged. Repay existing debt first.'); render(); return; }
+    if(!spend(1)) return;
+    me.res.gold+=amt; me.debt=(me.debt||0)+amt;
+    log('eco',`🏦 IMF granted a ${fmt(amt)} gold loan at ${((G.imfRate||0.08)*100).toFixed(1)}% interest. Outstanding debt: ${fmt(me.debt)} gold. Repay before it compounds.`);
+    afterAction();
+  },
+  repay:(p)=>{
+    const me=P();
+    if(!(me.debt>0)){ log('sys','No outstanding IMF debt.'); render(); return; }
+    const requested=p==='all'?me.debt:parseInt(p,10);
+    const amt=Math.min(requested,me.debt,Math.floor(me.res.gold));
+    if(amt<=0){ log('sys','Not enough gold to repay.'); render(); return; }
+    if(!spend(1)) return;
+    me.res.gold-=amt; me.debt-=amt;
+    log('eco',`🏦 Repaid ${fmt(amt)} gold to the IMF. Remaining debt: ${fmt(me.debt)} gold.`);
     afterAction();
   },
   endTurn

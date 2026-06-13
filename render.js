@@ -289,6 +289,16 @@ function renderTabContent(){
          `<button class="btn cy" data-a="market" data-p="${res}" data-q="buy" title="Spend ${M.lot*M[res].buy} gold to buy ${M.lot} ${res}. Costs 1 action." ${(me.res.gold<M.lot*M[res].buy||G.actions<1)?'disabled':''}>BUY ${M.lot}</button>`+
          `<button class="btn" data-a="market" data-p="${res}" data-q="sell" title="Sell ${M.lot} ${res} for ${M.lot*M[res].sell} gold. Costs 1 action." ${(me.res[res]<M.lot||G.actions<1)?'disabled':''}>SELL ${M.lot}</button></div>`;
     }
+    // IMF loans
+    const rate=((G.imfRate||0.08)*100).toFixed(1), debt=me.debt||0;
+    const overleveraged=debt>score(me)*0.8;
+    h+=`<div class="sec">🏦 INTERNATIONAL MONETARY FUND — 1 action each</div>`;
+    h+=`<div class="muted" style="margin-bottom:6px">Current interest rate: <b class="${parseFloat(rate)>=12?'r':parseFloat(rate)>=9?'c':'g'}">${rate}%/turn</b> (compound, changes each turn) · Debt: <b class="${debt>0?'r':'g'}">${fmt(debt)} gold</b>${debt>0?' — subtracts from your net-worth':''}</div>`;
+    h+=`<div class="row" style="flex-wrap:wrap;gap:6px"><span class="grow dim">BORROW${overleveraged?' <span class="r">(over-leveraged — repay first)</span>':''}</span>`+
+      [1000,2500,5000].map(amt=>`<button class="btn cy" data-a="loan" data-p="${amt}" title="Borrow ${fmt(amt)} gold from the IMF. Repaid with ${rate}% compound interest per turn. IMF refuses if debt exceeds 80% of your net-worth." ${(overleveraged||G.actions<1)?'disabled':''}>+${fmt(amt)}</button>`).join('')+`</div>`;
+    h+=`<div class="row" style="flex-wrap:wrap;gap:6px"><span class="grow dim">REPAY${debt<=0?' <span class="g">(no debt)</span>':''}</span>`+
+      [1000,5000].map(amt=>`<button class="btn" data-a="repay" data-p="${amt}" title="Pay down ${fmt(amt)} gold of IMF debt. Costs 1 action." ${(debt<=0||me.res.gold<amt||G.actions<1)?'disabled':''}>−${fmt(amt)}</button>`).join('')+
+      `<button class="btn gr" data-a="repay" data-p="all" title="Pay off your entire IMF debt in one action." ${(debt<=0||me.res.gold<debt||G.actions<1)?'disabled':''}>REPAY ALL</button></div>`;
   }
   else if(UI.tab==='attack'){
     const t=UI.attackTarget&&byId(UI.attackTarget);

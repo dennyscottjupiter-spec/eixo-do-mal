@@ -103,7 +103,7 @@ function newNation(faction,isPlayer,personality){
     b:{ oilField:2, farm:3, factory:2, bank:1, barracks:1, bunker:1, lab:0, nuclearFacility:0 },
     army:{ infantry:50, tank:5, jet:0, spy:5, turret:10, scud:0, warhead:0 },
     techs:[], morale:100, relations:{}, intel:{}, nukeProg:0,
-    oilShort:false, lastAttackedBy:null, hitThisCycle:0
+    oilShort:false, lastAttackedBy:null, hitThisCycle:0, debt:0
   };
 }
 
@@ -113,7 +113,7 @@ function initGame(playerFaction){
   G = {
     turn:1, actions:CONFIG.actionsPerTurn, nations:[], log:[],
     over:false, result:null, streak:0, coalition:false, started:true,
-    easy: UI.mode==='easy'
+    easy: UI.mode==='easy', imfRate:0.08
   };
   G.nations.push(newNation(playerFaction,true,null));
   others.forEach((f,i)=>G.nations.push(newNation(f,false,persL[i%persL.length])));
@@ -138,7 +138,7 @@ const popCap   = n=>CONFIG.popCapBase + totalBuildings(n)*CONFIG.popCapPerBuildi
 const troopCnt = n=>n.army.infantry+n.army.tank+n.army.jet;
 const troopCap = n=>100 + n.b.barracks*100;
 const rawPower = n=>n.army.infantry + n.army.tank*4 + n.army.jet*6;
-const score    = n=>Math.floor(n.res.gold + n.res.pop*2 + rawPower(n)*3 + n.land*40 + totalBuildings(n)*500 + n.techs.length*1000);
+const score    = n=>Math.floor(n.res.gold + n.res.pop*2 + rawPower(n)*3 + n.land*40 + totalBuildings(n)*500 + n.techs.length*1000 - (n.debt||0));
 function rankOf(n){
   return G.nations.filter(x=>x.alive).sort((a,b)=>score(b)-score(a)).indexOf(n)+1;
 }
