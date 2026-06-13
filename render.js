@@ -93,18 +93,38 @@ function renderFirstMoves(){
   $('menuOverlay').classList.add('hidden');
   $('helpOverlay').classList.add('hidden');
   $('keysOverlay').classList.add('hidden');
-  $('firstMovesOverlay').innerHTML=`<div class="obox" style="max-width:520px">
-<div class="sec">📋 YOUR FIRST 6 MOVES</div>
-<div class="muted" style="margin-bottom:10px">New to EIXO DO MAL? These opening moves give you a solid foundation every time.</div>
+  const phase=(label,sub,items)=>`<div class="sec">${label}</div><div class="dim" style="margin:-4px 0 6px;font-size:12px">${sub}</div>`+
+    items.map(([act,why])=>`<div class="row" style="align-items:flex-start;padding:5px 0">
+  <span class="grow"><b class="c">${act}</b><br><span class="muted">${why}</span></span>
+</div>`).join('');
+  $('firstMovesOverlay').innerHTML=`<div class="obox" style="max-width:560px">
+<div class="sec">📋 OPENING GUIDE — FIRST 10 TURNS</div>
+<div class="muted" style="margin-bottom:8px">Follow this phased plan your first game. Every game after, adapt it to your faction's bonus.</div>
+${phase('PHASE 1 · TURNS 1–3 — Survive &amp; claim land','Don\'t starve. Get land. Grab a little cash.',[
+  ['🌾 BUILD a Farm (turn 1)','Food feeds your army and population every single turn. No farm = famine = pop drop + morale collapse. Always first.'],
+  ['🗺️ EXPLORE × 1–2','Each building needs 1 free acre. You start with 25 land and 12 buildings — only 13 free. Explore early or you hit a wall.'],
+  ['🛢️ BUILD an Oil Field','Tanks and jets need oil or fight at 50% power. One field early means your army is always battle-ready.'],
+  ['💰 COLLECT (Space) when low','Half a turn\'s income instantly, costs 1 action. Use it any turn you\'re tight on gold — it\'s never wasted.'],
+])}
+${phase('PHASE 2 · TURNS 4–7 — Build an economy &amp; a deterrent','Rivals start getting aggressive around turn 6.',[
+  ['💰 BUILD a Bank','Your biggest income booster. Gold pays for everything — one Bank outperforms almost any other build mid-game.'],
+  ['🪖 TRAIN 10–20 Infantry','A cheap standing army stops rivals from raiding you for free. You don\'t need to be the strongest — just not the easiest target.'],
+  ['⚙️ BUILD a Factory','Multiplies ALL resource income (up to 2×). Factory synergizes with Banks, Farms, Oil Fields — build it before stacking more of those.'],
+  ['🔬 BUILD a Research Lab','Opens the entire tech tree. Without it you can\'t research anything — and the nuclear path starts here. Priority before turn 8.'],
+])}
+${phase('PHASE 3 · TURNS 8–10 — Pick your win path','Two main roads to victory. Pick one and go hard.',[
+  ['☢️ PATH A — The Bomb','Research Nuclear Physics → build Nuclear Facility → advance warhead → assemble → research ICBM → deploy while ranked #1. Slow but decisive.'],
+  ['🤝 PATH B — Domination','You need: ranked #1 AND at least 1 conquered vassal AND 4 of 6 nations in your bloc (allies + vassals). Wars come first — then diplomacy.'],
+  ['📊 Watch the WORLD RANKING','It tells you who to fear, who to attack, and when you\'re close to winning. Check it every turn.'],
+])}
+<div class="sec" style="color:var(--red)">⚠ WATCH OUT FOR</div>
 ${[
-  ['🌾 BUILD a Farm',            'Armies eat food every turn — run out and your population shrinks, morale collapses. Priority #1.'],
-  ['🛢️ BUILD an Oil Field',      'Tanks and jets need oil to fight at full power. One field early keeps your army fuelled all game.'],
-  ['💰 COLLECT (Space)',         'Grab half a turn\'s income instantly. Do this when you start a turn low on gold — it costs just 1 action.'],
-  ['🗺️ EXPLORE new land',       'Each building costs 1 free acre. Without land you can\'t build — explore early, before you need it.'],
-  ['🪖 TRAIN 10 Infantry',      'A small standing army deters rivals from raiding you while you build up your economy. Cheap and fast.'],
-  ['🔬 BUILD a Research Lab',   'Opens the entire tech tree. Without it nothing can be researched — and the nuclear path starts here.'],
-].map(([move,why])=>`<div class="row" style="align-items:flex-start;gap:12px;padding:7px 0">
-  <span class="grow"><b class="c">${move}</b><br><span class="muted">${why}</span></span>
+  ['🌾 Famine','Food < 0 → −5% population and −20 morale every turn. Check your food delta in the HUD. Build Farms first if it\'s red.'],
+  ['⛽ Oil shortage','Oil < 0 → tanks and jets fight at 50% attack power. Watch the OIL! badge in the HUD.'],
+  ['⚠ Coalition (turn 5+ as #1)','Stay ranked #1 for 5 straight turns → all rivals unite against you. Either win fast, or delay the climb.'],
+  ['🏦 IMF debt (MARKET tab)','Loans are tempting early-game. But interest compounds every turn (rate changes!) and debt lowers your net-worth. Repay before it snowballs.'],
+].map(([w,d])=>`<div class="row" style="align-items:flex-start;padding:4px 0">
+  <span class="grow"><b class="r">${w}</b><br><span class="muted">${d}</span></span>
 </div>`).join('')}
 <div style="margin-top:14px"><button class="btn" data-a="closeOverlay" title="Return to faction select">✖ CLOSE</button></div>
 </div>`;
