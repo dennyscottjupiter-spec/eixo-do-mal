@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`eixo-do-mal.html` is a **single self-contained file** — an entire turn-based strategy game ("EIXO DO MAL", a 2003-style amber-phosphor terminal "world domination" sim). All HTML, CSS, and the full game engine (~950 lines of vanilla JS) live inline in that one file. There is no build step, no dependencies, no framework, no package.json, no tests.
+`eixo-do-mal.html` is a **single self-contained file** — an entire turn-based strategy game ("EIXO DO MAL", a 2003-style amber-phosphor terminal "world domination" sim). All HTML, CSS, and the full game engine (~1025 lines of vanilla JS) live inline in that one file. There is no build step, no dependencies, no framework, no package.json, no tests.
 
 ## Running / testing
 
@@ -25,6 +25,19 @@ The `<script>` is organized into 8 explicitly-commented layers. Read them top-to
 6. **Player action handlers** — the `H` object. Each key maps to a `data-a` attribute in the DOM. Most call `spend(cost)` (deduct actions) then a Layer-4 helper then `afterAction()` (which runs `aiMicro` + `checkAll` + `render`).
 7. **Rendering** — `render()` rewrites the *entire* UI from `G` every call (`renderStats`, `renderTabContent`, `renderLog`, `renderRank`, overlays). No partial DOM updates — mutate state, then call `render()`.
 8. **Wiring** — ONE delegated `click` listener reads `data-a`/`data-p`/`data-q` off the clicked element and dispatches to `H`. Plus the Konami/Enter keyboard handler.
+
+### Win conditions
+
+`checkAll()` is called after every action and at end of turn. It resolves to:
+
+- **Domination** (`winGame('domination')`) — you + your vassals + allies ≥ 4 of the 6 nations (i.e., `ctrl = 1 + alive allies/vassals ≥ 4`). Normal mode only.
+- **Nuclear** (`winGame('nuclear')`) — player deploys a warhead while ranked #1.
+- **Easy** (`winGame('easy')`) — reach `CONFIG.easyTargetNW` networth ($60,000) as #1, *or* eliminate every rival.
+- **Defeat** — player nation's population drops to 0 or all buildings are destroyed.
+
+**Coalition mechanic:** after each `endTurn()`, if the player held #1 for ≥ 5 consecutive turns (`G.streak >= 5`), `G.coalition` is set and all AI nations may join a war against the player (30% chance per AI per turn via `aiDiplomacy`).
+
+**Easy Mode differences (`G.easy`):** only BUILD / TRAIN / ATTACK tabs available; land constraint disabled (no EXPLORE needed); AI never invades and never pursues nukes; coalition never triggers; win condition is networth-based.
 
 ### Key conventions when editing
 
