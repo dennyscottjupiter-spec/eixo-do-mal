@@ -113,6 +113,8 @@ body{
   color:var(--amber);font:inherit;text-align:left;text-shadow:inherit}
 .fcard:hover{background:var(--amber);color:#0d0d0d;text-shadow:none}
 .fcard:hover .muted,.fcard:hover .g{color:#0d0d0d}
+.fcard.on{border-color:var(--amber-hi);background:#2a2208;color:var(--amber-hi)}
+.fcard.on .g{color:var(--green)}
 .fcard b{font-size:16px;letter-spacing:1px}
 /* ============ MOBILE ============ */
 @media (max-width:840px){
@@ -162,6 +164,9 @@ body{
 const CONFIG = {
   actionsPerTurn: 10,
   startRes: { gold:1500, oil:120, food:600, industry:60, pop:1000 },
+  startLand: 25,
+  easyTargetNW: 60000,
+  market: { lot:50, oil:{buy:8,sell:5}, food:{buy:4,sell:2} },
   popCapBase: 2000, popCapPerBuilding: 400,
   buildings: {
     oilField:        { n:'Oil Field',        i:'🛢️', g:300,  ind:5,  d:'+20 oil/turn' },
@@ -178,6 +183,7 @@ const CONFIG = {
     tank:     { n:'Tank',         g:150, f:20, batch:5,  atk:4, def:5,   fu:1,   ou:1 },
     jet:      { n:'Jet Fighter',  g:300, f:10, batch:2,  atk:6, def:5,   fu:1,   ou:2 },
     spy:      { n:'Spy',          g:100, f:5,  batch:5,  atk:0, def:0,   fu:0.5, ou:0 },
+    turret:   { n:'Turret',       g:80,  f:0,  batch:5,  atk:0, def:4,   fu:0,   ou:0 },
     scud:     { n:'SCUD Missile', g:500, f:0,  batch:1,  atk:0, def:0,   fu:0,   ou:0 }
   },
   factions: {
@@ -241,14 +247,14 @@ function asciiBar(v,max,len){
 
 /* ---------- game state ---------- */
 let G = null;                                   // single source of truth
-const UI = { tab:'build', attackTarget:null };  // view-only state
+const UI = { tab:'build', attackTarget:null, mode:'normal' };  // view-only state
 
 function newNation(faction,isPlayer,personality){
   return {
     id:faction, faction, isPlayer, personality, alive:true,
-    res:{ ...CONFIG.startRes },
+    res:{ ...CONFIG.startRes }, land:CONFIG.startLand,
     b:{ oilField:2, farm:3, factory:2, bank:1, barracks:1, bunker:1, lab:0, nuclearFacility:0 },
-    army:{ infantry:50, tank:5, jet:0, spy:5, scud:0, warhead:0 },
+    army:{ infantry:50, tank:5, jet:0, spy:5, turret:10, scud:0, warhead:0 },
     techs:[], morale:100, relations:{}, intel:{}, nukeProg:0,
     oilShort:false, lastAttackedBy:null, hitThisCycle:0
   };
@@ -259,11 +265,15 @@ function initGame(playerFaction){
   const persL  = shuffle(['aggressive','defensive','economic','espionage','balanced']);
   G = {
     turn:1, actions:CONFIG.actionsPerTurn, nations:[], log:[],
-    over:false, result:null, streak:0, coalition:false, started:true
+    over:false, result:null, streak:0, coalition:false, started:true,
+    easy: UI.mode==='easy'
   };
   G.nations.push(newNation(playerFaction,true,null));
   others.forEach((f,i)=>G.nations.push(newNation(f,false,persL[i%persL.length])));
-  log('sys','— TURN 1 — Choose your moves wisely. 10 actions per turn.');
+  if(G.easy){ P().res.gold+=2000; P().res.food+=400; }
+  log('sys', G.easy
+    ? '— TURN 1 · EASY MODE — Collect, build, train, attack. Rivals stay peaceful. Learn the ropes.'
+    : '— TURN 1 — Choose your moves wisely. 10 actions per turn.');
   bootSequence();
   render();
 }
@@ -276,11 +286,12 @@ const fb   = n=>CONFIG.factions[n.faction];
 const hasTech = (n,id)=>n.techs.includes(id);
 const techOf  = id=>CONFIG.techs.find(t=>t.id===id);
 const totalBuildings = n=>Object.values(n.b).reduce((s,v)=>s+v,0);
+const freeLand = n=>n.land - totalBuildings(n);
 const popCap   = n=>CONFIG.popCapBase + totalBuildings(n)*CONFIG.popCapPerBuilding;
 const troopCnt = n=>n.army.infantry+n.army.tank+n.army.jet;
 const troopCap = n=>100 + n.b.barracks*100;
 const rawPower = n=>n.army.infantry + n.army.tank*4 + n.army.jet*6;
-const score    = n=>Math.floor(n.res.gold + n.res.pop*2 + rawPower(n)*3 + totalBuildings(n)*500 + n.techs.length*1000);
+const score    = n=>Math.floor(n.res.gold + n.res.pop*2 + rawPower(n)*3 + n.land*40 + totalBuildings(n)*500 + n.techs.length*1000);
 function rankOf(n){
   return G.nations.filter(x=>x.alive).sort((a,b)=>score(b)-score(a)).indexOf(n)+1;
 }
@@ -358,7 +369,7 @@ function atkPower(n,units){
 function defPower(n){
   const f=fb(n), pen=n.oilShort?0.5:1;
   const lastStand = totalBuildings(n)<=3 ? 1.5 : 1;   // cornered nations fight desperately
-  return (n.army.infantry*1.2 + n.army.tank*5*pen + n.army.jet*5*pen)
+  return (n.army.infantry*1.2 + n.army.tank*5*pen + n.army.jet*5*pen + n.army.turret*4)
          * (1 + n.b.bunker*0.05) * (f.def||1) * lastStand;
 }
 function lossCommit(n,commit,p){ for(const k of ['infantry','tank','jet']) n.army[k]-=Math.floor(commit[k]*p); }
@@ -387,10 +398,11 @@ function resolveAttack(att,def,pct){
   if(ap>dp){
     lossCommit(att,commit,0.12); lossAll(def,0.30);
     const loot=Math.floor(def.res.gold*0.10); def.res.gold-=loot; att.res.gold+=loot;
+    const grab=Math.max(2,Math.floor(def.land*0.12)); def.land-=grab; att.land+=grab;
     const destroyed=[]; const nDest=rint(1,2);
     for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
     att.morale=clamp(att.morale+10,20,150); def.morale=clamp(def.morale-15,20,150);
-    log('war',`⚔ ${nm(att)} broke through ${nm(def)}'s lines! Looted ${fmt(loot)} gold`+
+    log('war',`⚔ ${nm(att)} broke through ${nm(def)}'s lines! Looted ${fmt(loot)} gold, seized ${grab} acres`+
         (destroyed.length?`; razed: ${destroyed.join(', ')}.`:'.'));
     checkDestroyed(def);
     return true;
@@ -431,6 +443,11 @@ function spyMission(att,def,mission){
       const b=destroyRandomBuilding(def);
       log('spy', b?`🕶 Sabotage! ${nm(def)}'s ${b} reduced to smoking rubble by ${nm(att)} agents.`
                   :`🕶 Saboteurs from ${nm(att)} found nothing left to destroy in ${nm(def)}.`);
+      checkDestroyed(def);
+    } else if(mission==='killpop'){
+      const killed=Math.floor(def.res.pop*(0.05+rnd()*0.08));
+      def.res.pop-=killed;
+      log('spy',`🕶 ${nm(att)}'s agents poisoned ${nm(def)}'s water — ${fmt(killed)} citizens dead.`);
       checkDestroyed(def);
     } else { // intel
       att.intel[def.id]=G.turn;
@@ -476,6 +493,7 @@ function winGame(type){
   G.over=true;
   G.result={ win:true, type,
     msg: type==='nuclear' ? 'NUCLEAR VICTORY — you deployed the warhead as the world\u2019s #1 power.'
+       : type==='easy'    ? 'EASY VICTORY — you mastered the basics and rose to the top of the Axis. Ready for the full game?'
                           : 'DOMINATION VICTORY — you control 4 of the 6 nations of the Axis.' };
   log('nuke','★★★ TOTAL VICTORY ★★★');
 }
@@ -489,6 +507,12 @@ function checkAll(){
   if(G.over) return;
   for(const n of G.nations) checkDestroyed(n);
   if(G.over) return;
+  if(G.easy){
+    // easy mode: win by reaching the target networth as #1, or wiping out every rival
+    const rivals=G.nations.filter(n=>!n.isPlayer&&n.alive).length;
+    if(P().alive && (rivals===0 || (score(P())>=CONFIG.easyTargetNW && rankOf(P())===1))) winGame('easy');
+    return;
+  }
   // domination: you + your vassals + allies control 4 of 6
   const ctrl = 1 + G.nations.filter(n=>!n.isPlayer&&n.alive&&['vassal','alliance'].includes(rel(P(),n))).length;
   if(ctrl>=4) winGame('domination');
@@ -499,6 +523,7 @@ function checkAll(){
 function buildCostOk(n,key){
   const b=CONFIG.buildings[key];
   if(b.req && !hasTech(n,b.req)) return false;
+  if(!(G&&G.easy) && freeLand(n)<1) return false;      // buildings consume land (acres) — disabled in easy mode
   return n.res.gold>=b.g && n.res.industry>=b.ind;
 }
 function doBuild(n,key){
@@ -548,6 +573,7 @@ function aiMicro(){
   if(!ais.length) return;
   const n=ais[microIdx++ % ais.length];
   const inc=incomes(n), up=upkeep(n);
+  if(freeLand(n)<2){ n.land+=rint(6,12); return; }   // AIs explore for room to build
   if(inc.food-up.food<0 && doBuild(n,'farm')) return;
   if(chance(0.5)){ if(aiTrainWeighted(n)) return; }
   if(aiBuildWeighted(n)) return;
@@ -660,15 +686,16 @@ function aiMacro(n){
   for(let i=0;i<6;i++){
     if(!n.alive||G.over) return;
     const up=upkeep(n), inc=incomes(n);
+    if(freeLand(n)<2){ n.land+=rint(6,12); continue; }
     if(n.res.food < up.food*2 && inc.food-up.food<0 && doBuild(n,'farm')) continue;
-    if(G.turn>30 && chance(0.35) && aiNukeStep(n)) continue;
+    if(!G.easy && G.turn>30 && chance(0.35) && aiNukeStep(n)) continue;
     if(chance(0.20) && aiResearch(n)) continue;
     if(chance(CONFIG.profiles[n.personality].spy) && aiSpy(n)) continue;
     if(chance(0.5) ? (aiBuildWeighted(n)||aiTrainWeighted(n)) : (aiTrainWeighted(n)||aiBuildWeighted(n))) continue;
     n.res.gold += Math.floor(n.res.pop*0.12);
   }
-  if(n.alive && !G.over && chance(0.6)) aiConsiderAttack(n);   // at most one offensive per turn
-  if(n.alive && !G.over) aiDiplomacy(n);
+  if(n.alive && !G.over && !G.easy && chance(0.6)) aiConsiderAttack(n);   // easy mode: rivals never invade
+  if(n.alive && !G.over && !G.easy) aiDiplomacy(n);
 }
 
 /* =====================================================================
@@ -697,8 +724,8 @@ function endTurn(){
     }
   }
   for(const n of G.nations) if(!n.isPlayer&&n.alive) aiMacro(n);
-  // coalition pressure: dominate too long and the world turns on you
-  if(!G.over){
+  // coalition pressure: dominate too long and the world turns on you (disabled in easy mode)
+  if(!G.over && !G.easy){
     if(rankOf(P())===1){ G.streak++; } else G.streak=0;
     if(G.streak>=5 && !G.coalition){
       G.coalition=true;
@@ -720,6 +747,7 @@ const H = {
   /* ---- meta ---- */
   tab:(p)=>{ UI.tab=p; UI.attackTarget=null; render(); },
   newGame:()=>{ G=null; UI.tab='build'; UI.attackTarget=null; render(); },
+  mode:(p)=>{ UI.mode=p; render(); },
   pickFaction:(p)=>initGame(p),
   back:()=>{ UI.attackTarget=null; render(); },
 
@@ -731,7 +759,32 @@ const H = {
     log('eco',`${pick(FLAVOR.collect)}: +${fmt(inc.gold*0.5)} gold, +${fmt(inc.oil*0.5)} oil, +${fmt(inc.food*0.5)} food.`);
     afterAction();
   },
+  explore:()=>{
+    if(!spend(1)) return;
+    const me=P(), g=Math.max(4,Math.round(18 - me.land/50));   // yield diminishes as the nation grows
+    me.land+=g;
+    log('eco',`🗺 Scouts claimed ${g} acres of unclaimed territory — land now ${fmt(me.land)}.`);
+    afterAction();
+  },
+  market:(p,q)=>{
+    const me=P(), M=CONFIG.market, amt=M.lot, res=p;
+    if(q==='buy'){
+      const cost=amt*M[res].buy;
+      if(me.res.gold<cost){ log('sys','Not enough gold for that lot.'); render(); return; }
+      if(!spend(1)) return;
+      me.res.gold-=cost; me.res[res]+=amt;
+      log('eco',`🏷 Bought ${amt} ${res} for ${fmt(cost)} gold on the black market.`);
+    } else {
+      if(me.res[res]<amt){ log('sys',`Not enough ${res} to sell.`); render(); return; }
+      if(!spend(1)) return;
+      const gain=amt*M[res].sell;
+      me.res[res]-=amt; me.res.gold+=gain;
+      log('eco',`🏷 Sold ${amt} ${res} for ${fmt(gain)} gold.`);
+    }
+    afterAction();
+  },
   build:(p)=>{
+    if(!G.easy && freeLand(P())<1){ log('sys','No free land. EXPLORE to claim acres first.'); render(); return; }
     if(!buildCostOk(P(),p)){ log('sys','Cannot afford that structure.'); render(); return; }
     if(!spend(1)) return;
     doBuild(P(),p);
@@ -866,6 +919,7 @@ function renderStats(){
   h+=dRow('🌾','Food',n.res.food,inc.food-up.food);
   h+=dRow('⚙️','Industry',n.res.industry,inc.ind);
   h+=`<div class="kv"><span>👥 Population</span><span>${fmt(n.res.pop)} <span class="dim">/${fmt(popCap(n))}</span></span></div>`;
+  if(!G.easy) h+=`<div class="kv"><span>🗺 Land</span><span>${fmt(totalBuildings(n))}/${fmt(n.land)} <span class="dim">acres</span></span></div>`;
   h+=`<div class="kv"><span class="dim">Industry mult.</span><span class="dim">×${industryMult(n).toFixed(2)}</span></div>`;
   h+=`<div class="sec">MORALE</div>`;
   h+=`<div>${n.morale} <span class="bar dim">[${asciiBar(n.morale,150,12)}]</span>${n.oilShort?' <span class="r">OIL SHORT</span>':''}</div>`;
@@ -873,6 +927,7 @@ function renderStats(){
   h+=`<div class="kv"><span>Infantry</span><span>${fmt(n.army.infantry)}</span></div>`;
   h+=`<div class="kv"><span>Tanks</span><span>${fmt(n.army.tank)}</span></div>`;
   h+=`<div class="kv"><span>Jet Fighters</span><span>${fmt(n.army.jet)}</span></div>`;
+  h+=`<div class="kv"><span>Turrets <span class="dim">(def)</span></span><span>${fmt(n.army.turret)}</span></div>`;
   h+=`<div class="kv"><span>Spies</span><span>${fmt(n.army.spy)}</span></div>`;
   h+=`<div class="kv"><span>SCUD Missiles</span><span>${fmt(n.army.scud)}</span></div>`;
   h+=`<div class="kv"><span>☢ Warheads</span><span>${fmt(n.army.warhead)}</span></div>`;
@@ -891,11 +946,14 @@ function renderCmd(){
   $('cmdbar').innerHTML=
     `<span>ACTIONS <span class="bar">[${asciiBar(G.actions,CONFIG.actionsPerTurn,10)}]</span> <b>${G.actions}/${CONFIG.actionsPerTurn}</b></span>`+
     `<button class="btn" data-a="collect" ${G.actions<1?'disabled':''}>COLLECT ▸1</button>`+
+    (G.easy?'':`<button class="btn" data-a="explore" ${G.actions<1?'disabled':''}>EXPLORE ▸1</button>`)+
     `<button class="btn warn" data-a="endTurn">END TURN ⏎</button>`;
 }
 
 function renderTabs(){
-  const tabs=[['build','BUILD'],['train','TRAIN'],['attack','ATTACK'],['spy','SPY'],['tech','TECH'],['diplo','DIPLO']];
+  const tabs = G.easy
+    ? [['build','BUILD'],['train','TRAIN'],['attack','ATTACK']]
+    : [['build','BUILD'],['train','TRAIN'],['market','MARKET'],['attack','ATTACK'],['spy','SPY'],['tech','TECH'],['diplo','DIPLO']];
   $('tabs').innerHTML=tabs.map(([k,l])=>
     `<button class="tab${UI.tab===k?' on':''}" data-a="tab" data-p="${k}">[${l}]</button>`).join('');
 }
@@ -909,8 +967,10 @@ function targetsOf(){ return G.nations.filter(t=>!t.isPlayer&&t.alive); }
 
 function renderTabContent(){
   const me=P(); let h='';
+  if(G.easy && !['build','train','attack'].includes(UI.tab)) UI.tab='build';
   if(UI.tab==='build'){
-    h+=`<div class="sec">CONSTRUCT — 1 action each</div>`;
+    const fl=freeLand(me);
+    h+=`<div class="sec">CONSTRUCT — 1 action each${G.easy?'':` · <span class="${fl<1?'r':'dim'}">free land: ${fmt(fl)} acres</span>`}</div>`;
     for(const k in CONFIG.buildings){
       const b=CONFIG.buildings[k], lock=b.req&&!hasTech(me,b.req);
       h+=`<div class="row"><span class="grow">${b.i} <b>${b.n}</b> <span class="dim">(${me.b[k]})</span><br><span class="muted">${b.d}${lock?' — <span class="r">requires Nuclear Physics</span>':''}</span></span>`+
@@ -922,9 +982,20 @@ function renderTabContent(){
     h+=`<div class="sec">TRAIN — 1 action per batch · capacity ${fmt(troopCnt(me))}/${fmt(troopCap(me))}</div>`;
     for(const k in CONFIG.units){
       const u=CONFIG.units[k];
-      h+=`<div class="row"><span class="grow"><b>${u.n}</b> <span class="dim">(own ${fmt(me.army[k])})</span><br><span class="muted">${u.atk?`atk ${u.atk} / def ${u.def}`:k==='spy'?'covert operations':'destroys enemy buildings'}</span></span>`+
+      h+=`<div class="row"><span class="grow"><b>${u.n}</b> <span class="dim">(own ${fmt(me.army[k])})</span><br><span class="muted">${u.atk?`atk ${u.atk} / def ${u.def}`:k==='spy'?'covert operations':k==='turret'?`static defense / def ${u.def}`:'destroys enemy buildings'}</span></span>`+
          `<span class="dim">${fmt(unitGoldCost(me,k))}💰 ${u.f*u.batch}🌾</span>`+
          `<button class="btn" data-a="train" data-p="${k}" ${(!trainCostOk(me,k)||G.actions<1)?'disabled':''}>TRAIN ×${u.batch}</button></div>`;
+    }
+  }
+  else if(UI.tab==='market'){
+    const M=CONFIG.market;
+    h+=`<div class="sec">BLACK MARKET — 1 action per lot of ${M.lot}</div>`;
+    h+=`<div class="muted" style="margin-bottom:6px">On-hand: 🛢️ ${fmt(me.res.oil)} oil · 🌾 ${fmt(me.res.food)} food · 💰 ${fmt(me.res.gold)} gold</div>`;
+    for(const res of ['oil','food']){
+      const ic=res==='oil'?'🛢️':'🌾';
+      h+=`<div class="row"><span class="grow">${ic} <b>${res.toUpperCase()}</b> <span class="dim">buy ${M[res].buy}💰 · sell ${M[res].sell}💰 each</span></span>`+
+         `<button class="btn cy" data-a="market" data-p="${res}" data-q="buy" ${(me.res.gold<M.lot*M[res].buy||G.actions<1)?'disabled':''}>BUY ${M.lot}</button>`+
+         `<button class="btn" data-a="market" data-p="${res}" data-q="sell" ${(me.res[res]<M.lot||G.actions<1)?'disabled':''}>SELL ${M.lot}</button></div>`;
     }
   }
   else if(UI.tab==='attack'){
@@ -940,7 +1011,7 @@ function renderTabContent(){
     } else {
       h+=`<div class="sec">OFFENSIVE vs ${nm(t).toUpperCase()}</div>`;
       h+=`<div class="row"><span class="grow">${fb(t).flag} <b>${nm(t)}</b> — ${intelStr(t)}</span><button class="btn" data-a="back">◂ BACK</button></div>`;
-      h+=`<div class="row"><span class="grow">Ground assault <span class="dim">(▸2 actions — commit % of army)</span></span>`+
+      h+=`<div class="row"><span class="grow">Ground assault <span class="dim">(▸2 actions — seizes acres + loot on victory)</span></span>`+
          [25,50,75,100].map(p=>`<button class="btn warn" data-a="attack" data-p="${p}" ${G.actions<2?'disabled':''}>${p}%</button>`).join('')+`</div>`;
       h+=`<div class="row"><span class="grow">🚀 SCUD strike <span class="dim">(▸1 action, consumes 1 missile · own ${me.army.scud})</span></span>`+
          `<button class="btn warn" data-a="scud" ${(me.army.scud<1||G.actions<1)?'disabled':''}>LAUNCH</button></div>`;
@@ -955,6 +1026,7 @@ function renderTabContent(){
       h+=`<div class="row"><span class="grow">${fb(x).flag} <b>${nm(x)}</b><br>${intelStr(x)}</span>`+
          `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="steal" ${G.actions<1?'disabled':''}>STEAL</button>`+
          `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="sabotage" ${G.actions<1?'disabled':''}>SABOTAGE</button>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="killpop" ${G.actions<1?'disabled':''}>KILL POP</button>`+
          `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="intel" ${G.actions<1?'disabled':''}>INTEL</button></div>`;
     }
   }
@@ -1011,10 +1083,11 @@ function renderRank(){
     const r=n.isPlayer?'':REL_ICON[rel(P(),n)]||'';
     h+=`<div class="rrow${n.isPlayer?' me':''}"><span class="pos">#${i+1}</span>`+
        `<span class="nn">${fb(n).flag} ${nm(n)}${n.isPlayer?' (YOU)':''} ${n.isPlayer?'':`<span class="v">${r}</span>`}</span>`+
-       `<span class="sc">${fmt(score(n))}</span></div>`;
+       `<span class="sc">$${fmt(score(n))}</span></div>`;
   });
   dead.forEach(n=>{ h+=`<div class="rrow dead"><span class="pos">☠</span><span class="nn">${nm(n)}</span><span class="sc">FALLEN</span></div>`; });
-  h+=`<div class="sec">SCORE FORMULA</div><div class="muted" style="font-size:12px">gold + pop×2 + army×3<br>+ buildings×500 + techs×1000</div>`;
+  h+=`<div class="sec">NETWORTH ($)</div><div class="muted" style="font-size:12px">gold + pop×2 + army×3<br>+ land×40 + buildings×500 + techs×1000</div>`;
+  if(G.easy) h+=`<div class="g" style="margin-top:8px;font-size:12px">🎓 EASY MODE GOAL<br>Reach $${fmt(CONFIG.easyTargetNW)} networth as #1,<br>or eliminate every rival nation.</div>`;
   if(G.coalition) h+=`<div class="r" style="margin-top:8px">⚠ COALITION AGAINST YOU ACTIVE</div>`;
   $('rank').innerHTML=h;
 }
@@ -1037,9 +1110,14 @@ function renderFactionOverlay(show){
 ║   text-only world domination terminal            ║
 ╚══════════════════════════════════════════════════╝
 </pre>
-<div class="muted">Six rogue nations. One throne. Build, train, spy, invade — and reach the bomb first.
+<div class="muted">Six rogue nations. One throne. Explore for land, build, train, spy, invade — and reach the bomb first.
 Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nations to your will.</div>
-<div class="sec">SELECT YOUR NATION</div>
+<div class="sec">GAME MODE</div>
+<div class="fgrid" style="grid-template-columns:1fr 1fr;margin-bottom:6px">
+  <button class="fcard${UI.mode==='normal'?' on':''}" data-a="mode" data-p="normal"><b>⚔ NORMAL</b><br><span class="muted">full game — land, tech, spies, diplomacy, nukes, AI rivals fight back</span></button>
+  <button class="fcard${UI.mode==='easy'?' on':''}" data-a="mode" data-p="easy"><b>🎓 EASY MODE</b><br><span class="g">learn the basics — just build, train, attack. peaceful rivals, no nukes.</span></button>
+</div>
+<div class="sec">SELECT YOUR NATION ${UI.mode==='easy'?'<span class="g">· EASY MODE</span>':''}</div>
 <div class="fgrid">${cards}</div>
 </div>`;
 }
@@ -1048,7 +1126,7 @@ function renderOver(){
   if(!G.over){ o.classList.add('hidden'); return; }
   o.classList.remove('hidden');
   const R=G.result, rows=G.nations.slice().sort((a,b)=>score(b)-score(a))
-    .map((n,i)=>`<div class="rrow${n.isPlayer?' me':''}${n.alive?'':' dead'}"><span class="pos">#${i+1}</span><span class="nn">${fb(n).flag} ${nm(n)}${n.isPlayer?' (YOU)':''}</span><span class="sc">${n.alive?fmt(score(n)):'FALLEN'}</span></div>`).join('');
+    .map((n,i)=>`<div class="rrow${n.isPlayer?' me':''}${n.alive?'':' dead'}"><span class="pos">#${i+1}</span><span class="nn">${fb(n).flag} ${nm(n)}${n.isPlayer?' (YOU)':''}</span><span class="sc">${n.alive?'$'+fmt(score(n)):'FALLEN'}</span></div>`).join('');
   o.innerHTML=`<div class="obox">
 <pre>${R.win?
 `╔═══════════════════════════════════╗
