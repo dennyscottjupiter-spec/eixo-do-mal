@@ -122,25 +122,39 @@ function spyMission(att,def,mission){
     if(mission==='steal'){
       const amt=Math.floor(def.res.gold*(0.05+rnd()*0.10));
       def.res.gold-=amt; att.res.gold+=amt;
-      log('spy',`🕶️ Your spies stole ${fmt(amt)} gold from ${nm(def)} and wired it to your treasury.`);
+      if(att.isPlayer)
+        log('spy',`🕶️ Your spies stole ${fmt(amt)} gold from ${nm(def)} and wired it to your treasury.`);
+      else if(def.isPlayer)
+        log('spy',`🕶️ ${nm(att)} agents raided your treasury — ${fmt(amt)} gold stolen.`);
     } else if(mission==='sabotage'){
       const b=destroyRandomBuilding(def);
-      log('spy', b?`🕶️ Sabotage! Your agents blew up ${nm(def)}'s ${b}.`
-                  :`🕶️ Your saboteurs infiltrated ${nm(def)} but found nothing left to destroy.`);
+      if(att.isPlayer)
+        log('spy', b?`🕶️ Sabotage! Your agents blew up ${nm(def)}'s ${b}.`
+                    :`🕶️ Your saboteurs infiltrated ${nm(def)} but found nothing left to destroy.`);
+      else if(def.isPlayer)
+        log('spy', b?`🕶️ ${nm(att)} saboteurs destroyed your ${b}!`
+                    :`🕶️ ${nm(att)} agents infiltrated your territory but found nothing to destroy.`);
       checkDestroyed(def);
     } else if(mission==='killpop'){
       const killed=Math.floor(def.res.pop*(0.05+rnd()*0.08));
       def.res.pop-=killed;
-      log('spy',`🕶️ Your agents poisoned ${nm(def)}'s water supply — ${fmt(killed)} citizens died.`);
+      if(att.isPlayer)
+        log('spy',`🕶️ Your agents poisoned ${nm(def)}'s water supply — ${fmt(killed)} citizens died.`);
+      else if(def.isPlayer)
+        log('spy',`🕶️ ${nm(att)} poisoned your water supply — ${fmt(killed)} of your citizens died.`);
       checkDestroyed(def);
     } else { // intel
       att.intel[def.id]=G.turn;
-      log('spy',`🕶️ Intel report acquired on ${nm(def)}: army, gold, and building counts are now visible for 5 turns.`);
+      if(att.isPlayer)
+        log('spy',`🕶️ Intel report acquired on ${nm(def)}: army, gold, and building counts are now visible for 5 turns.`);
     }
   } else {
     const lost=Math.max(1,Math.floor(att.army.spy*(0.1+rnd()*0.2)));
     att.army.spy-=lost;
-    log('spy',`🕶️ Mission failed — ${lost} of your spies were caught and captured by ${nm(def)}.`);
+    if(att.isPlayer)
+      log('spy',`🕶️ Mission failed — ${lost} of your spies were caught and captured by ${nm(def)}.`);
+    else if(def.isPlayer)
+      log('intel',`📡 You caught ${lost} of ${nm(att)}'s spies trying to infiltrate your territory.`);
   }
 }
 
