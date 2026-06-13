@@ -4,18 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`eixo-do-mal.html` is a **single self-contained file** — an entire turn-based strategy game ("EIXO DO MAL", a 2003-style amber-phosphor terminal "world domination" sim). All HTML, CSS, and the full game engine (~1025 lines of vanilla JS) live inline in that one file. There is no build step, no dependencies, no framework, no package.json, no tests.
+**EIXO DO MAL** is a 2003-style amber-phosphor terminal strategy game ("world domination" sim). The source is three files — no build step, no dependencies, no framework, no package.json, no tests:
+
+```
+index.html   — markup only; links styles.css + game.js
+styles.css   — amber CRT design tokens, layout, widgets (~197 lines)
+game.js      — entire game engine: CONFIG, economy, combat, AI, rendering (~1045 lines)
+.nojekyll    — empty; prevents GitHub Pages Jekyll build
+```
 
 ## Running / testing
 
-- **Run:** open `eixo-do-mal.html` directly in a browser (no server needed). On Windows: `start eixo-do-mal.html`.
+- **Run:** open `index.html` directly in a browser (no server needed). On Windows: `start index.html`.
 - **Verify a change:** open the file, pick a faction, take a few actions, and watch the EVENT LOG + WORLD RANKING update. There is no test harness — smoke-testing means playing.
 - **Hard-refresh** (Ctrl+Shift+R) after edits — the browser caches the file.
 - **Cheats for testing:** Konami code (↑↑↓↓←→←→BA) grants +9999 gold; `Enter` ends the turn. Useful for fast-forwarding to late-game states (nukes, coalition).
 
 ## Architecture
 
-The `<script>` is organized into 8 explicitly-commented layers. Read them top-to-bottom — each builds on the last:
+`game.js` is organized into 8 explicitly-commented layers. Read them top-to-bottom — each builds on the last:
 
 1. **CONFIG + state + utils** — `CONFIG` holds *every* balance number (buildings, units, factions, techs, AI profiles). Tune gameplay here, not in logic. `G` is the single source of truth (one mutable game-state object); `UI` holds view-only state (`tab`, `attackTarget`). `newNation()` / `initGame()` build `G`.
 2. **Economy** — `incomes()`, `upkeep()`, `econTick()` run per-nation each turn.
