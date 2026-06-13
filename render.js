@@ -23,42 +23,59 @@ function renderMenu(){
 function renderHelp(){
   $('keysOverlay').classList.add('hidden');
   $('firstMovesOverlay').classList.add('hidden');
-  $('helpOverlay').innerHTML=`<div class="obox" style="max-width:560px">
-<pre>
-╔══════════════════════════════════════════════════╗
-║   E I X O   D O   M A L  ·  HOW TO PLAY          ║
-╚══════════════════════════════════════════════════╝
-</pre>
+  $('helpOverlay').innerHTML=`<div class="obox" style="max-width:600px">
+<div class="sec">HOW TO PLAY — EIXO DO MAL</div>
 <div class="sec">GOAL</div>
-<div class="muted">Dominate the world — either by bending 4 of the 6 nations
-to your will, or by detonating a nuclear warhead while ranked #1.</div>
+<div class="muted">Dominate the world — either by bending 4 of the 6 nations to your will, or by detonating a nuclear warhead while ranked #1. Six rogue states, one throne.</div>
 <div class="sec">EACH TURN</div>
-<div class="muted">You get <b>10 actions</b>. Spend them on the tabs below.
-Most actions cost 1; attacking costs 2.
-Press <b>Enter</b> (or the END TURN button) when done.</div>
+<div class="muted">You get <b>10 actions</b>. Spend them on the 7 tabs. Most cost 1 action; ground assaults cost 2. Press <b>Enter</b> (or END TURN) when done. Then all rivals act simultaneously.</div>
 <div class="sec">TABS AT A GLANCE</div>
 <div class="muted">
-🏗 <b>BUILD</b>   — construct buildings to earn more resources each turn
-🎖 <b>TRAIN</b>   — recruit soldiers, tanks, jets, spies, missiles
-🏷 <b>MARKET</b>  — buy/sell oil and food for gold
-⚔️ <b>ATTACK</b>  — ground assault (seizes land + loot), SCUD, or nuke
-🕶️ <b>SPY</b>     — steal gold, blow up buildings, gather enemy intel
-🔬 <b>TECH</b>    — research upgrades; the Nuclear path leads to victory
-🤝 <b>DIPLO</b>   — make alliances (count toward domination) or declare war
+🏗 <b>BUILD</b>   — construct buildings that earn resources every turn<br>
+🎖 <b>TRAIN</b>   — recruit infantry, tanks, jets, spies, turrets, missiles<br>
+🏷 <b>MARKET</b>  — buy/sell oil and food for gold; borrow from the IMF<br>
+⚔️ <b>ATTACK</b>  — ground assault, SCUD strike, or nuclear detonation<br>
+🕶️ <b>SPY</b>     — steal gold, destroy buildings, kill population, or gather intel<br>
+🔬 <b>TECH</b>    — research upgrades; tier 3-4 leads to the nuclear path<br>
+🤝 <b>DIPLO</b>   — alliances count toward Domination; vassals pay tribute
 </div>
-<div class="sec">QUICK TIPS</div>
+<div class="sec">COMBAT BASICS</div>
 <div class="muted">
-• 💰 COLLECT grabs half a turn's income instantly — use it when starved.
-• 🗺️ EXPLORE claims land so you can build more structures.
-• Build <b>Farms</b> early — starving armies collapse fast.
-• The <b>World Ranking</b> on the right shows who to fear (or attack).
-• Dominate #1 for 5 turns in a row → rivals form a <b>coalition</b> against you.
+• Ground assault = you vs their defense. <b>Attack power</b>: infantry×1 + tanks×4 + jets×6, scaled by morale and tech.<br>
+• <b>Oil shortage</b> cuts tank and jet attack power by 50% — always keep oil positive.<br>
+• <b>Morale</b> multiplies attack (max 150%). It rises slowly in peacetime and drops from defeats, famine, or nuclear strikes.<br>
+• <b>Assaults cost 2 actions</b>. Win → seize land + loot gold. Lose → heavy troop casualties on both sides.<br>
+• You can run at most <b>${CONFIG.maxOpsPerTarget} hostile ops</b> on the same nation per turn (attacks + spy ops combined) — after that they are on HIGH ALERT until next turn.
+</div>
+<div class="sec">ECONOMY &amp; GROWTH</div>
+<div class="muted">
+• <b>Gold</b> = pop × 0.5/turn + banks × 60/turn × factory multiplier.<br>
+• <b>Factory industry</b> multiplies ALL building output up to 2× — build factories early and stack them.<br>
+• <b>COLLECT</b> (Space) grabs half a turn's income instantly. Use it any turn you're tight on gold.<br>
+• <b>Famine</b> (food &lt; 0) kills 5% of your population and collapses morale every turn — build Farms first.<br>
+• <b>IMF loans</b> (MARKET tab) give instant gold but accrue compound interest every turn. Rates drift 4-16%. Debt lowers your net-worth score — repay before it snowballs.<br>
+• EXPLORE claims new land (you need free acres to build). Yield falls as your nation grows.
+</div>
+<div class="sec">ESPIONAGE &amp; INTEL</div>
+<div class="muted">
+• Spy ops: <b>STEAL</b> (5-15% of their gold), <b>SABOTAGE</b> (blow up a building), <b>KILL POP</b> (5-13% population), <b>INTEL</b> (reveals army/gold/buildings for 5 turns).<br>
+• Run <b>INTEL first</b> — ??? means you have no data. Without intel you're flying blind on attack and spy missions.<br>
+• Your success rate = your spies ÷ (their spies × 1.5). More spies = more reliable ops.<br>
+• Their <b>Encryption</b> tech adds 15% to their spy defense — train extra spies to compensate.<br>
+• Max ${CONFIG.maxOpsPerTarget} ops per target per turn — after that they go on HIGH ALERT.
+</div>
+<div class="sec">DIPLOMACY &amp; THE BLOC</div>
+<div class="muted">
+• <b>Alliances</b> count toward Domination but you can't attack allies. Nations are wary early — they're far more likely to ally after turn 8.<br>
+• <b>Vassals</b> pay you 10% gold tribute each turn. To vassalize: beat them in a war until their score drops below 25% of yours, then click VASSALIZE.<br>
+• <b>Coalition</b>: stay ranked #1 for 5 consecutive turns and rivals unite against you. Win fast or avoid holding #1 for too long.<br>
+• AI–AI wars, pacts, and peace treaties happen on their own — watch the EVENT LOG for intel on their moves.
 </div>
 <div class="sec">WIN CONDITIONS</div>
 <div class="muted">
-☢️ <b>Nuclear</b>    — deploy a warhead while ranked #1
-♟  <b>Domination</b> — ranked #1 + control 4 of 6 (allies + ≥1 conquered vassal)
-🎓 <b>Easy mode</b>  — reach $60,000 net worth as #1, or eliminate all rivals
+☢ <b>Nuclear</b>    — deploy a warhead while ranked #1 (needs Nuclear Physics → Nuclear Facility → research 50 steps → assemble → ICBM → deploy)<br>
+♟  <b>Domination</b> — ranked #1 + control 4 of 6 (allies + vassals), with at least 1 conquered vassal<br>
+🎓 <b>Easy mode</b>  — reach $60,000 net worth as #1, or eliminate every rival
 </div>
 <div style="margin-top:14px"><button class="btn" data-a="closeOverlay" title="Return to the game">✖ CLOSE</button></div>
 </div>`;
