@@ -21,12 +21,12 @@ const CONFIG = {
     nuclearFacility: { n:'Nuclear Facility', i:'☢️', g:4000, ind:60, d:'enables warhead program', req:'nuclearPhysics' }
   },
   units: {
-    infantry: { n:'Infantry',     g:20,  f:5,  batch:10, atk:1, def:1.2, fu:0.5, ou:0 },
-    tank:     { n:'Tank',         g:150, f:20, batch:5,  atk:4, def:5,   fu:1,   ou:1 },
-    jet:      { n:'Jet Fighter',  g:300, f:10, batch:2,  atk:6, def:5,   fu:1,   ou:2 },
-    spy:      { n:'Spy',          g:100, f:5,  batch:5,  atk:0, def:0,   fu:0.5, ou:0 },
-    turret:   { n:'Turret',       g:80,  f:0,  batch:5,  atk:0, def:4,   fu:0,   ou:0 },
-    scud:     { n:'SCUD Missile', g:500, f:0,  batch:1,  atk:0, def:0,   fu:0,   ou:0 }
+    infantry: { n:'Infantry',     i:'🪖', g:20,  f:5,  batch:10, atk:1, def:1.2, fu:0.5, ou:0 },
+    tank:     { n:'Tank',         i:'🚙', g:150, f:20, batch:5,  atk:4, def:5,   fu:1,   ou:1 },
+    jet:      { n:'Jet Fighter',  i:'✈️', g:300, f:10, batch:2,  atk:6, def:5,   fu:1,   ou:2 },
+    spy:      { n:'Spy',          i:'🕵️', g:100, f:5,  batch:5,  atk:0, def:0,   fu:0.5, ou:0 },
+    turret:   { n:'Turret',       i:'🗼', g:80,  f:0,  batch:5,  atk:0, def:4,   fu:0,   ou:0 },
+    scud:     { n:'SCUD Missile', i:'🚀', g:500, f:0,  batch:1,  atk:0, def:0,   fu:0,   ou:0 }
   },
   factions: {
     iran:       { n:'Iran',        flag:'🇮🇷', bonus:'Oil income +15%',   oil:1.15 },
@@ -149,7 +149,7 @@ function setWar(a,b){
   if(rel(a,b)==='war') return;
   if(rel(a,b)==='vassal'||rel(a,b)==='master'){ /* rebellion / betrayal breaks the bond */ }
   setRel(a,b,'war');
-  log('diplo',`${nm(a)} and ${nm(b)} are now AT WAR.`);
+  log('diplo',`⚔️ ${nm(a)} and ${nm(b)} are now AT WAR. Attacks between them are allowed.`);
 }
 function warsCount(){
   let w=0; const ns=G.nations.filter(n=>n.alive);
@@ -185,11 +185,11 @@ function econTick(n){
   r.industry += inc.ind;
   r.oil += inc.oil - up.oil;
   n.oilShort = r.oil < 0;
-  if(r.oil<0){ r.oil=0; if(n.isPlayer) log('eco','OIL SHORTAGE — tanks and jets operate at 50% power.'); }
+  if(r.oil<0){ r.oil=0; if(n.isPlayer) log('eco','⛽ OIL SHORTAGE — you are out of oil. Tanks and jets fight at 50% power until you produce or buy more.'); }
   r.food += inc.food - up.food;
   if(r.food<0){
     r.food=0; r.pop=Math.floor(r.pop*0.95); n.morale=clamp(n.morale-20,20,150);
-    if(n.isPlayer) log('eco','FAMINE! Population −5%, morale collapses. Build farms.');
+    if(n.isPlayer) log('eco','🌾 FAMINE! Your people are starving — population dropped 5% and morale collapsed. Build more Farms urgently.');
   } else {
     const growth = 1 + 0.02*(f.pop||1);            // Cuba grows 2.2%/turn
     r.pop = Math.min(popCap(n), Math.floor(r.pop*growth));
@@ -233,7 +233,7 @@ function resolveAttack(att,def,pct){
     jet:Math.floor(att.army.jet*pct)
   };
   if(commit.infantry+commit.tank+commit.jet===0){
-    log('war',`${nm(att)} declared an offensive but fielded no troops. Embarrassing.`); return false;
+    log('war',`${nm(att)} tried to attack but has no troops to send. Train soldiers first.`); return false;
   }
   const ap=atkPower(att,commit)*(0.9+rnd()*0.2);
   const dp=defPower(def)   *(0.9+rnd()*0.2);
@@ -244,14 +244,14 @@ function resolveAttack(att,def,pct){
     const destroyed=[]; const nDest=rint(1,2);
     for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
     att.morale=clamp(att.morale+10,20,150); def.morale=clamp(def.morale-15,20,150);
-    log('war',`⚔ ${nm(att)} broke through ${nm(def)}'s lines! Looted ${fmt(loot)} gold, seized ${grab} acres`+
-        (destroyed.length?`; razed: ${destroyed.join(', ')}.`:'.'));
+    log('war',`⚔️ ${nm(att)} WON — broke through ${nm(def)}'s defenses! Looted ${fmt(loot)} gold and seized ${grab} acres`+
+        (destroyed.length?`. Razed: ${destroyed.join(', ')}.`:'.'));
     checkDestroyed(def);
     return true;
   } else {
     lossCommit(att,commit,0.30); lossAll(def,0.10);
     att.morale=clamp(att.morale-15,20,150); def.morale=clamp(def.morale+10,20,150);
-    log('war',`⚔ ${nm(def)} repelled ${nm(att)}'s assault — invaders routed with heavy losses.`);
+    log('war',`🛡️ ${nm(def)} DEFENDED — repelled ${nm(att)}'s assault. The attackers retreated with heavy losses.`);
     checkDestroyed(att);
     return false;
   }
@@ -264,10 +264,10 @@ function scudStrike(att,def){
   if(chance(hitP)){
     const destroyed=[]; const nDest=rint(1,2);
     for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
-    log('war',`🚀 SCUD from ${nm(att)} slammed into ${nm(def)}${destroyed.length?` — destroyed: ${destroyed.join(', ')}.`:' — empty fields hit.'}`);
+    log('war',`🚀 SCUD missile from ${nm(att)} hit ${nm(def)}${destroyed.length?` — destroyed: ${destroyed.join(', ')}.`:' — landed in empty fields, no buildings hit.'}`);
     checkDestroyed(def);
   } else {
-    log('war',`🚀 ${nm(def)}'s air force intercepted a SCUD launched by ${nm(att)}.`);
+    log('war',`🚀 ${nm(def)}'s jets intercepted and shot down the SCUD fired by ${nm(att)}. No damage.`);
   }
 }
 
@@ -280,25 +280,25 @@ function spyMission(att,def,mission){
     if(mission==='steal'){
       const amt=Math.floor(def.res.gold*(0.05+rnd()*0.10));
       def.res.gold-=amt; att.res.gold+=amt;
-      log('spy',`🕶 ${nm(att)}'s spies infiltrated ${nm(def)} and stole ${fmt(amt)} gold.`);
+      log('spy',`🕶️ Your spies stole ${fmt(amt)} gold from ${nm(def)} and wired it to your treasury.`);
     } else if(mission==='sabotage'){
       const b=destroyRandomBuilding(def);
-      log('spy', b?`🕶 Sabotage! ${nm(def)}'s ${b} reduced to smoking rubble by ${nm(att)} agents.`
-                  :`🕶 Saboteurs from ${nm(att)} found nothing left to destroy in ${nm(def)}.`);
+      log('spy', b?`🕶️ Sabotage! Your agents blew up ${nm(def)}'s ${b}.`
+                  :`🕶️ Your saboteurs infiltrated ${nm(def)} but found nothing left to destroy.`);
       checkDestroyed(def);
     } else if(mission==='killpop'){
       const killed=Math.floor(def.res.pop*(0.05+rnd()*0.08));
       def.res.pop-=killed;
-      log('spy',`🕶 ${nm(att)}'s agents poisoned ${nm(def)}'s water — ${fmt(killed)} citizens dead.`);
+      log('spy',`🕶️ Your agents poisoned ${nm(def)}'s water supply — ${fmt(killed)} citizens died.`);
       checkDestroyed(def);
     } else { // intel
       att.intel[def.id]=G.turn;
-      log('spy',`🕶 ${nm(att)} acquired a full intelligence dossier on ${nm(def)}.`);
+      log('spy',`🕶️ Intel report acquired on ${nm(def)}: army, gold, and building counts are now visible for 5 turns.`);
     }
   } else {
     const lost=Math.max(1,Math.floor(att.army.spy*(0.1+rnd()*0.2)));
     att.army.spy-=lost;
-    log('spy',`🕶 Operation in ${nm(def)} blown — ${lost} of ${nm(att)}'s agents captured.`);
+    log('spy',`🕶️ Mission failed — ${lost} of your spies were caught and captured by ${nm(def)}.`);
   }
 }
 
@@ -309,11 +309,11 @@ function deployNuke(att,def){
   def.res.pop = Math.floor(def.res.pop*0.30);
   for(const k in def.b) def.b[k] = Math.ceil(def.b[k]*0.40);
   def.morale = 20;
-  log('nuke',`☢☢☢ ${nm(att)} DETONATED A NUCLEAR WARHEAD OVER ${nm(def).toUpperCase()}. The world holds its breath.`);
+  log('nuke',`☢️ ${nm(att)} DETONATED A NUCLEAR WARHEAD over ${nm(def).toUpperCase()}. 70% of their population wiped out. The world holds its breath.`);
   checkDestroyed(def);
   if(att.isPlayer){
     if(rankOf(att)===1) winGame('nuclear');
-    else log('nuke','You hold the bomb… but not the throne. Become the #1 power and strike again.');
+    else log('nuke','☢️ You deployed the bomb, but you are not ranked #1. Climb to the top and strike again for the nuclear victory.');
   } else {
     if(rankOf(att)===1 && !G.over) loseGame(`${nm(att)} achieved nuclear supremacy. Your era is over.`);
   }
@@ -571,11 +571,11 @@ function endTurn(){
     if(rankOf(P())===1){ G.streak++; } else G.streak=0;
     if(G.streak>=5 && !G.coalition){
       G.coalition=true;
-      log('diplo','⚠ WORLD ALERT: your dominance has united the rogue states against you.');
+      log('diplo','⚠️ WORLD ALERT: you have been ranked #1 for 5 turns. The rogue states are uniting against you — expect attacks from multiple nations.');
     }
   }
   G.turn++; G.actions=CONFIG.actionsPerTurn;
-  log('sys',`— TURN ${G.turn} — ${CONFIG.actionsPerTurn} actions restored.`);
+  log('sys',`— TURN ${G.turn} — Your rivals have acted. You have ${CONFIG.actionsPerTurn} fresh actions.`);
   checkAll(); render();
 }
 
@@ -592,20 +592,44 @@ const H = {
   toggleEasy:()=>{ UI.mode = UI.mode==='easy' ? 'normal' : 'easy'; render(); },
   pickFaction:(p)=>initGame(p),
   back:()=>{ UI.attackTarget=null; render(); },
+  menu:()=>renderMenu(),
+  help:()=>renderHelp(),
+  helpFromMenu:()=>{ $('menuOverlay').classList.add('hidden'); renderHelp(); },
+  closeOverlay:()=>{ $('menuOverlay').classList.add('hidden'); $('helpOverlay').classList.add('hidden'); },
+  saveGame:()=>{
+    if(!G||!G.started||G.over) return;
+    try{
+      localStorage.setItem('eixo-save',JSON.stringify({G,UImode:UI.mode,UItab:UI.tab,UIatk:UI.attackTarget}));
+      if(G&&G.started) log('sys','💾 Game saved to browser storage.');
+      $('menuOverlay').classList.add('hidden'); render();
+    } catch(e){ alert('Save failed: '+e.message); }
+  },
+  loadGame:()=>{
+    const raw=localStorage.getItem('eixo-save');
+    if(!raw){ alert('No saved game found.'); return; }
+    try{
+      const s=JSON.parse(raw);
+      G=s.G; UI.mode=s.UImode||'normal'; UI.tab=s.UItab||'build'; UI.attackTarget=s.UIatk||null;
+      $('menuOverlay').classList.add('hidden'); $('helpOverlay').classList.add('hidden');
+      log('sys','📂 Game loaded from browser storage.'); render();
+    } catch(e){ alert('Load failed — save data may be corrupted.'); }
+  },
+  restartGame:()=>{ $('menuOverlay').classList.add('hidden'); G=null; UI.tab='build'; UI.attackTarget=null; render(); },
+  resignGame:()=>{ $('menuOverlay').classList.add('hidden'); if(G&&G.started&&!G.over){ loseGame('You resigned — the throne stays empty.'); render(); } },
 
   /* ---- economy ---- */
   collect:()=>{
     if(!spend(1)) return;
     const inc=incomes(P()), r=P().res;
     r.gold+=inc.gold*0.5; r.oil+=inc.oil*0.5; r.food+=inc.food*0.5; r.industry+=inc.ind*0.5;
-    log('eco',`${pick(FLAVOR.collect)}: +${fmt(inc.gold*0.5)} gold, +${fmt(inc.oil*0.5)} oil, +${fmt(inc.food*0.5)} food.`);
+    log('eco',`💰 Collected taxes: +${fmt(inc.gold*0.5)} gold, +${fmt(inc.oil*0.5)} oil, +${fmt(inc.food*0.5)} food.`);
     afterAction();
   },
   explore:()=>{
     if(!spend(1)) return;
     const me=P(), g=Math.max(4,Math.round(18 - me.land/50));   // yield diminishes as the nation grows
     me.land+=g;
-    log('eco',`🗺 Scouts claimed ${g} acres of unclaimed territory — land now ${fmt(me.land)}.`);
+    log('eco',`🗺️ Scouts claimed ${g} new acres — your total land is now ${fmt(me.land)} acres.`);
     afterAction();
   },
   market:(p,q)=>{
@@ -615,13 +639,13 @@ const H = {
       if(me.res.gold<cost){ log('sys','Not enough gold for that lot.'); render(); return; }
       if(!spend(1)) return;
       me.res.gold-=cost; me.res[res]+=amt;
-      log('eco',`🏷 Bought ${amt} ${res} for ${fmt(cost)} gold on the black market.`);
+      log('eco',`🏷️ Bought ${amt} ${res} for ${fmt(cost)} gold on the black market.`);
     } else {
       if(me.res[res]<amt){ log('sys',`Not enough ${res} to sell.`); render(); return; }
       if(!spend(1)) return;
       const gain=amt*M[res].sell;
       me.res[res]-=amt; me.res.gold+=gain;
-      log('eco',`🏷 Sold ${amt} ${res} for ${fmt(gain)} gold.`);
+      log('eco',`🏷️ Sold ${amt} ${res} for ${fmt(gain)} gold on the black market.`);
     }
     afterAction();
   },
@@ -630,14 +654,14 @@ const H = {
     if(!buildCostOk(P(),p)){ log('sys','Cannot afford that structure.'); render(); return; }
     if(!spend(1)) return;
     doBuild(P(),p);
-    log('eco',`${pick(FLAVOR.build)} ${CONFIG.buildings[p].n}.`);
+    log('eco',`🏗️ Built a ${CONFIG.buildings[p].n}. ${CONFIG.buildings[p].d}.`);
     afterAction();
   },
   train:(p)=>{
     if(!trainCostOk(P(),p)){ log('sys','Cannot train: check gold, food and barracks capacity.'); render(); return; }
     if(!spend(1)) return;
     doTrain(P(),p);
-    log('eco',`${pick(FLAVOR.train)} ${CONFIG.units[p].batch}× ${CONFIG.units[p].n}.`);
+    log('eco',`${CONFIG.units[p].i} Trained ${CONFIG.units[p].batch}× ${CONFIG.units[p].n} — ready for deployment.`);
     afterAction();
   },
 
@@ -676,7 +700,7 @@ const H = {
     if(!availTechs(me).includes(t)||me.res.gold<t.g){ log('sys','Research unavailable.'); render(); return; }
     if(!spend(1)) return;
     doResearch(me,t);
-    log('eco',`🔬 Research complete: ${t.n} — ${t.d}.`);
+    log('eco',`🔬 Research complete: ${t.n} — ${t.d}`);
     afterAction();
   },
   nukeAdv:()=>{
@@ -684,7 +708,7 @@ const H = {
     if(me.b.nuclearFacility<1||!hasTech(me,'nuclearPhysics')||me.nukeProg>=CONFIG.warhead.researchNeeded) return;
     if(!spend(1)) return;
     me.nukeProg=Math.min(CONFIG.warhead.researchNeeded, me.nukeProg+2);
-    log('eco',`☢ Warhead program advanced: ${me.nukeProg}/${CONFIG.warhead.researchNeeded}.`);
+    log('eco',`☢️ Warhead research advanced: ${me.nukeProg}/${CONFIG.warhead.researchNeeded}. Keep going — you need to reach ${CONFIG.warhead.researchNeeded} to assemble.`);
     afterAction();
   },
   assemble:()=>{
@@ -692,7 +716,7 @@ const H = {
     if(me.nukeProg<W.researchNeeded||me.res.gold<W.g||me.res.oil<W.oil) { log('sys','Warhead assembly requirements not met.'); render(); return; }
     if(!spend(1)) return;
     me.res.gold-=W.g; me.res.oil-=W.oil; me.army.warhead++;
-    log('nuke','☢ WARHEAD ASSEMBLED. The button is yours. Research ICBM Program to deploy.');
+    log('nuke','☢️ WARHEAD ASSEMBLED. The bomb is ready. Now research the ICBM Program tech, then deploy it while ranked #1 to win.');
     afterAction();
   },
 
@@ -705,22 +729,22 @@ const H = {
       const base=CONFIG.profiles[t.personality].acceptAlly;
       const ratio=score(me)/Math.max(score(t),1);
       const ok = ratio>0.5 && ratio<2.5 && chance(base + (rel(me,t)==='war'?-0.3:0));
-      if(ok){ setRel(me,t,'alliance'); log('diplo',`🤝 ${nm(t)} accepted your alliance proposal.`); }
-      else log('diplo',`${nm(t)} rejected your alliance proposal.`);
+      if(ok){ setRel(me,t,'alliance'); log('diplo',`🤝 ${nm(t)} accepted your alliance proposal. They count toward your Domination victory.`); }
+      else log('diplo',`🤝 ${nm(t)} rejected your alliance proposal. Try again when you are closer in power.`);
     } else if(q==='war'){
       setWar(me,t);
     } else if(q==='peace'){
       const ok = chance(score(t)<score(me)?0.7:0.35);
-      if(ok){ setRel(me,t,'peace'); log('diplo',`🕊 ${nm(t)} signed a peace treaty with you.`); }
-      else log('diplo',`${nm(t)} refused your peace offer. The war continues.`);
+      if(ok){ setRel(me,t,'peace'); log('diplo',`🕊️ ${nm(t)} accepted a peace treaty. Hostilities have ended.`); }
+      else log('diplo',`🕊️ ${nm(t)} refused your peace offer. The war continues.`);
     } else if(q==='vassal'){
       if(rel(me,t)==='war' && score(t)<score(me)*0.25){
         setRel(me,t,'vassal','master');
-        log('diplo',`♟ ${nm(t)} capitulated and is now your VASSAL. Tribute will flow.`);
-      } else log('diplo',`${nm(t)} spat on your demand for vassalage.`);
+        log('diplo',`♟️ ${nm(t)} capitulated — now your VASSAL. They will pay 10% of their gold as tribute each turn.`);
+      } else log('diplo',`♟️ ${nm(t)} refused to surrender. Their score must be below 25% of yours to vassalize them.`);
     } else if(q==='break'){
       setRel(me,t,'peace');
-      log('diplo',`You dissolved the alliance with ${nm(t)}.`);
+      log('diplo',`You dissolved the alliance with ${nm(t)}. Relations return to neutral peace.`);
     }
     afterAction();
   },
@@ -729,20 +753,78 @@ const H = {
 /* =====================================================================
    Layer 7: rendering — one render() rewrites everything from state
    ===================================================================== */
+function renderMenu(){
+  const hasSave=!!localStorage.getItem('eixo-save');
+  $('menuOverlay').innerHTML=`<div class="obox" style="max-width:380px">
+<div class="sec">☰ GAME MENU</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+  <button class="btn gr" data-a="saveGame" title="Save the current game to this browser. One save slot." ${(!G||!G.started||G.over)?'disabled':''}>💾 SAVE GAME</button>
+  <button class="btn cy" data-a="loadGame" title="Load your last saved game." ${!hasSave?'disabled':''}>📂 LOAD GAME${hasSave?'':' <span class="muted">(no save found)</span>'}</button>
+  <button class="btn" data-a="helpFromMenu" title="Read the quick-start rules.">❔ HOW TO PLAY</button>
+  <button class="btn" data-a="restartGame" title="Abandon this game and start fresh — you will pick a new faction.">🔄 RESTART (new game)</button>
+  <button class="btn warn" data-a="resignGame" title="Give up and end the game in defeat." ${(!G||!G.started||G.over)?'disabled':''}>🏳️ RESIGN (forfeit)</button>
+  <button class="btn" data-a="closeOverlay" title="Close this menu and return to the game." style="margin-top:6px">✖ CLOSE</button>
+</div></div>`;
+  $('menuOverlay').classList.remove('hidden');
+}
+function renderHelp(){
+  $('helpOverlay').innerHTML=`<div class="obox" style="max-width:560px">
+<pre>
+╔══════════════════════════════════════════════════╗
+║   E I X O   D O   M A L  ·  HOW TO PLAY          ║
+╚══════════════════════════════════════════════════╝
+</pre>
+<div class="sec">GOAL</div>
+<div class="muted">Dominate the world — either by bending 4 of the 6 nations
+to your will, or by detonating a nuclear warhead while ranked #1.</div>
+<div class="sec">EACH TURN</div>
+<div class="muted">You get <b>10 actions</b>. Spend them on the tabs below.
+Most actions cost 1; attacking costs 2.
+Press <b>Enter</b> (or the END TURN button) when done.</div>
+<div class="sec">TABS AT A GLANCE</div>
+<div class="muted">
+🏗 <b>BUILD</b>   — construct buildings to earn more resources each turn
+🎖 <b>TRAIN</b>   — recruit soldiers, tanks, jets, spies, missiles
+🏷 <b>MARKET</b>  — buy/sell oil and food for gold
+⚔️ <b>ATTACK</b>  — ground assault (seizes land + loot), SCUD, or nuke
+🕶️ <b>SPY</b>     — steal gold, blow up buildings, gather enemy intel
+🔬 <b>TECH</b>    — research upgrades; the Nuclear path leads to victory
+🤝 <b>DIPLO</b>   — make alliances (count toward domination) or declare war
+</div>
+<div class="sec">QUICK TIPS</div>
+<div class="muted">
+• 💰 COLLECT grabs half a turn's income instantly — use it when starved.
+• 🗺️ EXPLORE claims land so you can build more structures.
+• Build <b>Farms</b> early — starving armies collapse fast.
+• The <b>World Ranking</b> on the right shows who to fear (or attack).
+• Dominate #1 for 5 turns in a row → rivals form a <b>coalition</b> against you.
+• <b>Konami code</b> ↑↑↓↓←→←→BA → +9,999 gold cheat.
+</div>
+<div class="sec">WIN CONDITIONS</div>
+<div class="muted">
+☢️ <b>Nuclear</b>    — deploy a warhead while ranked #1
+♟  <b>Domination</b> — you + allies + vassals = 4 of 6 nations
+🎓 <b>Easy mode</b>  — reach $60,000 net worth as #1, or eliminate all rivals
+</div>
+<div style="margin-top:14px"><button class="btn" data-a="closeOverlay" title="Return to the game">✖ CLOSE</button></div>
+</div>`;
+  $('helpOverlay').classList.remove('hidden');
+}
 const $=id=>document.getElementById(id);
 const REL_ICON={war:'⚔',alliance:'✦',vassal:'♟',master:'⛓',peace:'·'};
 
 function render(){
-  if(!G || !G.started){ renderFactionOverlay(true); return; }
+  if(!G || !G.started){ renderFactionOverlay(true); if(window.twemoji) twemoji.parse(document.body,{base:'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/',folder:'svg',ext:'.svg'}); return; }
   renderFactionOverlay(false);
   renderDefcon(); renderHud(); renderDetail(); renderCmd(); renderTabs(); renderTabContent();
   renderLog(); renderRank(); renderOver();
+  if(window.twemoji) twemoji.parse(document.body,{base:'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/',folder:'svg',ext:'.svg'});
 }
 
 function renderDefcon(){
   const w=warsCount(), d=clamp(5-w,1,5);
   const blocks=Array.from({length:5},(_,i)=>i<(6-d)?'■':'□').join('');
-  $('defcon').innerHTML=
+  $('defcon-inner').innerHTML=
     `<span class="brand">EIXO DO MAL <small>// WORLD DOMINATION TERMINAL v2.3</small></span>`+
     `<span class="dstat d${d}">DEFCON ${d} [${blocks}] ${w} active war${w===1?'':'s'}</span>`+
     `<span class="dstat">${fb(P()).flag} ${nm(P()).toUpperCase()} · TURN <b>${G.turn}</b><span class="cursor"></span></span>`;
@@ -784,13 +866,13 @@ function renderDetail(){
   const n=P();
   let h='';
   h+=`<div class="sec">ARMED FORCES</div>`;
-  h+=`<div class="kv"><span>Infantry</span><span>${fmt(n.army.infantry)}</span></div>`;
-  h+=`<div class="kv"><span>Tanks</span><span>${fmt(n.army.tank)}</span></div>`;
-  h+=`<div class="kv"><span>Jet Fighters</span><span>${fmt(n.army.jet)}</span></div>`;
-  h+=`<div class="kv"><span>Turrets <span class="dim">(def)</span></span><span>${fmt(n.army.turret)}</span></div>`;
-  h+=`<div class="kv"><span>Spies</span><span>${fmt(n.army.spy)}</span></div>`;
-  h+=`<div class="kv"><span>SCUD Missiles</span><span>${fmt(n.army.scud)}</span></div>`;
-  h+=`<div class="kv"><span>☢ Warheads</span><span>${fmt(n.army.warhead)}</span></div>`;
+  h+=`<div class="kv"><span>${CONFIG.units.infantry.i} Infantry</span><span>${fmt(n.army.infantry)}</span></div>`;
+  h+=`<div class="kv"><span>${CONFIG.units.tank.i} Tanks</span><span>${fmt(n.army.tank)}</span></div>`;
+  h+=`<div class="kv"><span>${CONFIG.units.jet.i} Jet Fighters</span><span>${fmt(n.army.jet)}</span></div>`;
+  h+=`<div class="kv"><span>${CONFIG.units.turret.i} Turrets <span class="dim">(def)</span></span><span>${fmt(n.army.turret)}</span></div>`;
+  h+=`<div class="kv"><span>${CONFIG.units.spy.i} Spies</span><span>${fmt(n.army.spy)}</span></div>`;
+  h+=`<div class="kv"><span>${CONFIG.units.scud.i} SCUD Missiles</span><span>${fmt(n.army.scud)}</span></div>`;
+  h+=`<div class="kv"><span>☢️ Warheads</span><span>${fmt(n.army.warhead)}</span></div>`;
   h+=`<div class="kv dim"><span>Capacity</span><span>${fmt(troopCnt(n))}/${fmt(troopCap(n))}</span></div>`;
   h+=`<div class="kv dim"><span>Atk / Def</span><span>${fmt(atkPower(n,n.army))} / ${fmt(defPower(n))}</span></div>`;
   h+=`<div class="sec">STRUCTURES</div>`;
@@ -806,17 +888,25 @@ function renderDetail(){
 function renderCmd(){
   $('cmdbar').innerHTML=
     `<span>ACTIONS <span class="bar">[${asciiBar(G.actions,CONFIG.actionsPerTurn,10)}]</span> <b>${G.actions}/${CONFIG.actionsPerTurn}</b></span>`+
-    `<button class="btn" data-a="collect" ${G.actions<1?'disabled':''}>COLLECT ▸1</button>`+
-    (G.easy?'':`<button class="btn" data-a="explore" ${G.actions<1?'disabled':''}>EXPLORE ▸1</button>`)+
-    `<button class="btn warn" data-a="endTurn">END TURN ⏎</button>`;
+    `<button class="btn gr" data-a="collect" title="Collect half your turn's income right now — gold, oil, food. Costs 1 action." ${G.actions<1?'disabled':''}>💰 COLLECT ▸1</button>`+
+    (G.easy?'':`<button class="btn cy" data-a="explore" title="Send scouts to claim new land. You need free acres to build. Costs 1 action." ${G.actions<1?'disabled':''}>🗺️ EXPLORE ▸1</button>`)+
+    `<button class="btn warn" data-a="endTurn" title="End your turn. All rivals act, then you get 10 fresh actions. Press Enter as a shortcut.">⏎ END TURN</button>`;
 }
 
 function renderTabs(){
   const tabs = G.easy
-    ? [['build','BUILD'],['train','TRAIN'],['attack','ATTACK']]
-    : [['build','BUILD'],['train','TRAIN'],['market','MARKET'],['attack','ATTACK'],['spy','SPY'],['tech','TECH'],['diplo','DIPLO']];
-  $('tabs').innerHTML=tabs.map(([k,l])=>
-    `<button class="tab${UI.tab===k?' on':''}" data-a="tab" data-p="${k}">[${l}]</button>`).join('');
+    ? [['build','🏗 BUILD','Construct buildings that produce resources or troops'],
+       ['train','🎖 TRAIN','Recruit soldiers, tanks, jets, spies, turrets or missiles'],
+       ['attack','⚔️ ATTACK','Launch a ground assault, fire a missile, or drop a nuke']]
+    : [['build','🏗 BUILD','Construct buildings that produce resources or troops'],
+       ['train','🎖 TRAIN','Recruit soldiers, tanks, jets, spies, turrets or missiles'],
+       ['market','🏷 MARKET','Buy or sell oil and food on the black market'],
+       ['attack','⚔️ ATTACK','Launch a ground assault, fire a missile, or drop a nuke'],
+       ['spy','🕶️ SPY','Send agents to steal gold, sabotage buildings, or gather intel'],
+       ['tech','🔬 TECH','Research technologies that boost production, combat, or unlock nukes'],
+       ['diplo','🤝 DIPLO','Propose alliances, declare war, or vassalize weaker nations']];
+  $('tabs').innerHTML=tabs.map(([k,l,tip])=>
+    `<button class="tab${UI.tab===k?' on':''}" data-a="tab" data-p="${k}" title="${tip}">${l}</button>`).join('');
 }
 
 function intelStr(t){
@@ -834,18 +924,21 @@ function renderTabContent(){
     h+=`<div class="sec">CONSTRUCT — 1 action each${G.easy?'':` · <span class="${fl<1?'r':'dim'}">free land: ${fmt(fl)} acres</span>`}</div>`;
     for(const k in CONFIG.buildings){
       const b=CONFIG.buildings[k], lock=b.req&&!hasTech(me,b.req);
+      const tip=`Build a ${b.n}: ${b.d}. Costs ${fmt(b.g)} gold and ${b.ind} industry.${lock?' Requires Nuclear Physics tech first.':''}`;
       h+=`<div class="row"><span class="grow">${b.i} <b>${b.n}</b> <span class="dim">(${me.b[k]})</span><br><span class="muted">${b.d}${lock?' — <span class="r">requires Nuclear Physics</span>':''}</span></span>`+
          `<span class="dim">${fmt(b.g)}💰 ${b.ind}⚙️</span>`+
-         `<button class="btn" data-a="build" data-p="${k}" ${(!buildCostOk(me,k)||G.actions<1)?'disabled':''}>BUILD</button></div>`;
+         `<button class="btn" data-a="build" data-p="${k}" title="${tip}" ${(!buildCostOk(me,k)||G.actions<1)?'disabled':''}>BUILD</button></div>`;
     }
   }
   else if(UI.tab==='train'){
     h+=`<div class="sec">TRAIN — 1 action per batch · capacity ${fmt(troopCnt(me))}/${fmt(troopCap(me))}</div>`;
     for(const k in CONFIG.units){
       const u=CONFIG.units[k];
-      h+=`<div class="row"><span class="grow"><b>${u.n}</b> <span class="dim">(own ${fmt(me.army[k])})</span><br><span class="muted">${u.atk?`atk ${u.atk} / def ${u.def}`:k==='spy'?'covert operations':k==='turret'?`static defense / def ${u.def}`:'destroys enemy buildings'}</span></span>`+
+      const desc=u.atk?`Atk ${u.atk} / Def ${u.def} — good for ground combat`:k==='spy'?'Used for covert ops: steal gold, sabotage, gather intel':k==='turret'?`Static defense tower — Def ${u.def}, cannot attack`:'Missile — destroys enemy buildings from a distance';
+      const tip=`Train ${u.batch}× ${u.n}. ${desc}. Costs ${fmt(unitGoldCost(me,k))} gold.`;
+      h+=`<div class="row"><span class="grow">${u.i} <b>${u.n}</b> <span class="dim">(own ${fmt(me.army[k])})</span><br><span class="muted">${u.atk?`atk ${u.atk} / def ${u.def}`:k==='spy'?'covert operations':k==='turret'?`static defense / def ${u.def}`:'destroys enemy buildings'}</span></span>`+
          `<span class="dim">${fmt(unitGoldCost(me,k))}💰 ${u.f*u.batch}🌾</span>`+
-         `<button class="btn" data-a="train" data-p="${k}" ${(!trainCostOk(me,k)||G.actions<1)?'disabled':''}>TRAIN ×${u.batch}</button></div>`;
+         `<button class="btn" data-a="train" data-p="${k}" title="${tip}" ${(!trainCostOk(me,k)||G.actions<1)?'disabled':''}>TRAIN ×${u.batch}</button></div>`;
     }
   }
   else if(UI.tab==='market'){
@@ -855,8 +948,8 @@ function renderTabContent(){
     for(const res of ['oil','food']){
       const ic=res==='oil'?'🛢️':'🌾';
       h+=`<div class="row"><span class="grow">${ic} <b>${res.toUpperCase()}</b> <span class="dim">buy ${M[res].buy}💰 · sell ${M[res].sell}💰 each</span></span>`+
-         `<button class="btn cy" data-a="market" data-p="${res}" data-q="buy" ${(me.res.gold<M.lot*M[res].buy||G.actions<1)?'disabled':''}>BUY ${M.lot}</button>`+
-         `<button class="btn" data-a="market" data-p="${res}" data-q="sell" ${(me.res[res]<M.lot||G.actions<1)?'disabled':''}>SELL ${M.lot}</button></div>`;
+         `<button class="btn cy" data-a="market" data-p="${res}" data-q="buy" title="Spend ${M.lot*M[res].buy} gold to buy ${M.lot} ${res}. Costs 1 action." ${(me.res.gold<M.lot*M[res].buy||G.actions<1)?'disabled':''}>BUY ${M.lot}</button>`+
+         `<button class="btn" data-a="market" data-p="${res}" data-q="sell" title="Sell ${M.lot} ${res} for ${M.lot*M[res].sell} gold. Costs 1 action." ${(me.res[res]<M.lot||G.actions<1)?'disabled':''}>SELL ${M.lot}</button></div>`;
     }
   }
   else if(UI.tab==='attack'){
@@ -866,29 +959,29 @@ function renderTabContent(){
       for(const x of targetsOf()){
         const r=rel(me,x), block=['alliance','vassal'].includes(r);
         h+=`<div class="row"><span class="grow">${fb(x).flag} <b>${nm(x)}</b> <span class="dim">#${rankOf(x)}</span> ${REL_ICON[r]||''}<br>${intelStr(x)}</span>`+
-           `<button class="btn warn" data-a="target" data-p="${x.id}" ${block?'disabled':''}>${block?(r==='vassal'?'VASSAL':'ALLY'):'ENGAGE ▸'}</button></div>`;
+           `<button class="btn warn" data-a="target" data-p="${x.id}" title="${block?`Cannot attack — they are your ${r}`:`Select ${nm(x)} as your attack target`}" ${block?'disabled':''}>${block?(r==='vassal'?'VASSAL':'ALLY'):'ENGAGE ▸'}</button></div>`;
       }
       if(!targetsOf().length) h+=`<div class="muted">No nations left to attack. You are alone among the ruins.</div>`;
     } else {
       h+=`<div class="sec">OFFENSIVE vs ${nm(t).toUpperCase()}</div>`;
-      h+=`<div class="row"><span class="grow">${fb(t).flag} <b>${nm(t)}</b> — ${intelStr(t)}</span><button class="btn" data-a="back">◂ BACK</button></div>`;
+      h+=`<div class="row"><span class="grow">${fb(t).flag} <b>${nm(t)}</b> — ${intelStr(t)}</span><button class="btn" data-a="back" title="Go back to the target list">◂ BACK</button></div>`;
       h+=`<div class="row"><span class="grow">Ground assault <span class="dim">(▸2 actions — seizes acres + loot on victory)</span></span>`+
-         [25,50,75,100].map(p=>`<button class="btn warn" data-a="attack" data-p="${p}" ${G.actions<2?'disabled':''}>${p}%</button>`).join('')+`</div>`;
+         [25,50,75,100].map(p=>`<button class="btn warn" data-a="attack" data-p="${p}" title="Commit ${p}% of your army. Win → loot gold + seize land. Lose → heavy casualties. Costs 2 actions." ${G.actions<2?'disabled':''}>${p}%</button>`).join('')+`</div>`;
       h+=`<div class="row"><span class="grow">🚀 SCUD strike <span class="dim">(▸1 action, consumes 1 missile · own ${me.army.scud})</span></span>`+
-         `<button class="btn warn" data-a="scud" ${(me.army.scud<1||G.actions<1)?'disabled':''}>LAUNCH</button></div>`;
+         `<button class="btn warn" data-a="scud" title="Fire a SCUD missile — destroys 1–2 of their buildings. Costs 1 action and 1 missile." ${(me.army.scud<1||G.actions<1)?'disabled':''}>LAUNCH</button></div>`;
       const canNuke=me.army.warhead>0&&hasTech(me,'icbm');
-      h+=`<div class="row"><span class="grow">☢ NUCLEAR STRIKE <span class="dim">(▸2 actions${canNuke?'':' — needs warhead + ICBM Program'})</span></span>`+
-         `<button class="btn warn" data-a="nuke" ${(!canNuke||G.actions<2)?'disabled':''}>☢ DEPLOY</button></div>`;
+      h+=`<div class="row"><span class="grow">☢️ NUCLEAR STRIKE <span class="dim">(▸2 actions${canNuke?'':' — needs warhead + ICBM Program'})</span></span>`+
+         `<button class="btn warn" data-a="nuke" title="${canNuke?'Detonate a nuclear warhead — devastates the target. Win the game if you are ranked #1.':'You need an assembled warhead AND the ICBM Program tech to deploy this.'}" ${(!canNuke||G.actions<2)?'disabled':''}>☢️ DEPLOY</button></div>`;
     }
   }
   else if(UI.tab==='spy'){
     h+=`<div class="sec">COVERT OPS — 1 action · network: ${fmt(me.army.spy)} spies</div>`;
     for(const x of targetsOf()){
       h+=`<div class="row"><span class="grow">${fb(x).flag} <b>${nm(x)}</b><br>${intelStr(x)}</span>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="steal" ${G.actions<1?'disabled':''}>STEAL</button>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="sabotage" ${G.actions<1?'disabled':''}>SABOTAGE</button>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="killpop" ${G.actions<1?'disabled':''}>KILL POP</button>`+
-         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="intel" ${G.actions<1?'disabled':''}>INTEL</button></div>`;
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="steal" title="Spies steal 5–15% of ${nm(x)}'s gold and transfer it to you." ${G.actions<1?'disabled':''}>STEAL</button>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="sabotage" title="Saboteurs blow up one of ${nm(x)}'s buildings." ${G.actions<1?'disabled':''}>SABOTAGE</button>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="killpop" title="Poison the water supply — kills 5–13% of ${nm(x)}'s population." ${G.actions<1?'disabled':''}>KILL POP</button>`+
+         `<button class="btn cy" data-a="spy" data-p="${x.id}" data-q="intel" title="Get a full report on ${nm(x)}'s army, gold, and buildings. Valid for 5 turns." ${G.actions<1?'disabled':''}>INTEL</button></div>`;
     }
   }
   else if(UI.tab==='tech'){
@@ -898,31 +991,31 @@ function renderTabContent(){
       const done=hasTech(me,t.id), can=av.includes(t)&&me.res.gold>=t.g;
       let st;
       if(done) st=`<span class="g">[RESEARCHED]</span>`;
-      else if(av.includes(t)) st=`<button class="btn" data-a="tech" data-p="${t.id}" ${(!can||G.actions<1)?'disabled':''}>RESEARCH ${fmt(t.g)}💰</button>`;
-      else st=`<span class="muted">[LOCKED]</span>`;
+      else if(av.includes(t)) st=`<button class="btn" data-a="tech" data-p="${t.id}" title="Research ${t.n}: ${t.d}. Costs ${fmt(t.g)} gold and 1 action." ${(!can||G.actions<1)?'disabled':''}>RESEARCH ${fmt(t.g)}💰</button>`;
+      else st=`<span class="muted">[LOCKED — research the previous tier first]</span>`;
       h+=`<div class="row"><span class="grow"><span class="dim">T${t.tier}</span> <b>${t.n}</b><br><span class="muted">${t.d}</span></span>${st}</div>`;
     }
-    h+=`<div class="sec">☢ MANHATTAN-DO-MAL PROJECT</div>`;
+    h+=`<div class="sec">☢️ MANHATTAN-DO-MAL PROJECT</div>`;
     const W=CONFIG.warhead, phys=hasTech(me,'nuclearPhysics'), fac=me.b.nuclearFacility>0;
     h+=`<div class="muted">1. Nuclear Physics ${phys?'<span class="g">✔</span>':'✘'} → 2. Nuclear Facility ${fac?'<span class="g">✔</span>':'✘'} → 3. Research ×${W.researchNeeded} → 4. Assemble → 5. ICBM → 6. Deploy as #1 power = <b>VICTORY</b></div>`;
     h+=`<div class="row"><span class="grow">Warhead research <span class="dim">[${asciiBar(me.nukeProg,W.researchNeeded,14)}] ${me.nukeProg}/${W.researchNeeded} (+1 passive/turn with facility)</span></span>`+
-       `<button class="btn" data-a="nukeAdv" ${(!phys||!fac||me.nukeProg>=W.researchNeeded||G.actions<1)?'disabled':''}>ADVANCE +2</button></div>`;
+       `<button class="btn" data-a="nukeAdv" title="Manually advance warhead research by 2 steps. Requires Nuclear Physics tech + Nuclear Facility. Costs 1 action." ${(!phys||!fac||me.nukeProg>=W.researchNeeded||G.actions<1)?'disabled':''}>ADVANCE +2</button></div>`;
     h+=`<div class="row"><span class="grow">Assemble warhead <span class="dim">${fmt(W.g)}💰 + ${W.oil}🛢️ · own: ${me.army.warhead}</span></span>`+
-       `<button class="btn warn" data-a="assemble" ${(me.nukeProg<W.researchNeeded||me.res.gold<W.g||me.res.oil<W.oil||G.actions<1)?'disabled':''}>ASSEMBLE</button></div>`;
+       `<button class="btn warn" data-a="assemble" title="Build a nuclear warhead. Then research ICBM Program and deploy it as the #1 power to win. Costs ${fmt(W.g)} gold + ${W.oil} oil." ${(me.nukeProg<W.researchNeeded||me.res.gold<W.g||me.res.oil<W.oil||G.actions<1)?'disabled':''}>ASSEMBLE</button></div>`;
   }
   else if(UI.tab==='diplo'){
     h+=`<div class="sec">DIPLOMACY — 1 action each</div>`;
     for(const x of targetsOf()){
       const r=rel(me,x);
       let btns='';
-      if(r==='peace') btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="ally" ${G.actions<1?'disabled':''}>PROPOSE ALLIANCE</button>`+
-                           `<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="war" ${G.actions<1?'disabled':''}>DECLARE WAR</button>`;
+      if(r==='peace') btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="ally" title="Propose an alliance — they may accept or refuse. Allies count toward your Domination victory." ${G.actions<1?'disabled':''}>PROPOSE ALLIANCE</button>`+
+                           `<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="war" title="Formally declare war on ${nm(x)}. This allows you to attack them." ${G.actions<1?'disabled':''}>DECLARE WAR</button>`;
       else if(r==='war'){
         const canV=score(x)<score(me)*0.25;
-        btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="peace" ${G.actions<1?'disabled':''}>OFFER PEACE</button>`+
-             `<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="vassal" ${(!canV||G.actions<1)?'disabled':''} title="enemy must be below 25% of your score">VASSALIZE</button>`;
+        btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="peace" title="Offer a peace treaty. ${nm(x)} is more likely to accept if they are losing." ${G.actions<1?'disabled':''}>OFFER PEACE</button>`+
+             `<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="vassal" title="${canV?`Demand ${nm(x)} surrender as your vassal — they will pay 10% tribute each turn`:'Enemy must be below 25% of your score to vassalize'}. Enemy becomes your vassal." ${(!canV||G.actions<1)?'disabled':''}>VASSALIZE</button>`;
       }
-      else if(r==='alliance') btns=`<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="break" ${G.actions<1?'disabled':''}>BREAK PACT</button>`;
+      else if(r==='alliance') btns=`<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="break" title="End the alliance with ${nm(x)}. Relations return to peace." ${G.actions<1?'disabled':''}>BREAK PACT</button>`;
       else if(r==='vassal') btns=`<span class="g">pays you tribute ♟</span>`;
       h+=`<div class="row"><span class="grow">${fb(x).flag} <b>${nm(x)}</b> <span class="v">${REL_ICON[r]} ${r.toUpperCase()}</span> <span class="dim">${x.personality||''}</span></span>${btns}</div>`;
     }
@@ -950,6 +1043,15 @@ function renderRank(){
   h+=`<div class="sec">NETWORTH ($)</div><div class="muted" style="font-size:12px">gold + pop×2 + army×3<br>+ land×40 + buildings×500 + techs×1000</div>`;
   if(G.easy) h+=`<div class="g" style="margin-top:8px;font-size:12px">🎓 EASY MODE GOAL<br>Reach $${fmt(CONFIG.easyTargetNW)} networth as #1,<br>or eliminate every rival nation.</div>`;
   if(G.coalition) h+=`<div class="r" style="margin-top:8px">⚠ COALITION AGAINST YOU ACTIVE</div>`;
+  // military sub-ranking
+  h+=`<div class="sec">⚔️ MILITARY POWER</div>`;
+  const byMil=G.nations.filter(n=>n.alive).slice().sort((a,b)=>rawPower(b)-rawPower(a));
+  byMil.forEach((n,i)=>{
+    h+=`<div class="rrow${n.isPlayer?' me':''}"><span class="pos">#${i+1}</span>`+
+       `<span class="nn">${fb(n).flag} ${nm(n)}${n.isPlayer?' (YOU)':''}</span>`+
+       `<span class="sc">${fmt(atkPower(n,n.army))}</span></div>`;
+  });
+  h+=`<div class="muted" style="font-size:11px;margin-top:2px">raw attack power score</div>`;
   $('rank').innerHTML=h;
 }
 
@@ -989,6 +1091,7 @@ Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nation
 function renderOver(){
   const o=$('overOverlay');
   if(!G.over){ o.classList.add('hidden'); return; }
+  $('menuOverlay').classList.add('hidden'); $('helpOverlay').classList.add('hidden');
   o.classList.remove('hidden');
   const R=G.result, rows=G.nations.slice().sort((a,b)=>score(b)-score(a))
     .map((n,i)=>`<div class="rrow${n.isPlayer?' me':''}${n.alive?'':' dead'}"><span class="pos">#${i+1}</span><span class="nn">${fb(n).flag} ${nm(n)}${n.isPlayer?' (YOU)':''}</span><span class="sc">${n.alive?'$'+fmt(score(n)):'FALLEN'}</span></div>`).join('');
@@ -1003,7 +1106,7 @@ function renderOver(){
 <div class="${R.win?'g':'r'}" style="margin-bottom:10px">${R.msg}</div>
 <div class="muted">Survived ${G.turn} turns.</div>
 <div class="sec">FINAL RANKING</div>${rows}
-<div style="margin-top:14px"><button class="btn" data-a="newGame">▸ NEW GAME</button></div>
+<div style="margin-top:14px"><button class="btn" data-a="newGame" title="Go back to faction select and start a brand new game.">▸ NEW GAME</button></div>
 </div>`;
 }
 

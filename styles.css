@@ -13,6 +13,8 @@ body{
   font-size:14px;line-height:1.45;overflow:hidden;
   text-shadow:0 0 6px rgba(240,192,64,.28);
 }
+/* Twemoji flag/emoji images */
+img.emoji{height:1em;width:1.25em;margin:0 .08em;vertical-align:-0.15em;display:inline-block}
 /* ============ CRT LAYER (signature): scanlines + vignette ============ */
 #crt{position:fixed;inset:0;pointer-events:none;z-index:50}
 #crt::before{content:'';position:absolute;inset:0;
@@ -26,9 +28,10 @@ body{
 }
 #defcon{
   height:42px;display:flex;align-items:center;justify-content:space-between;
-  gap:12px;padding:0 14px;border-bottom:1px solid var(--line);
+  gap:12px;padding:0 10px;border-bottom:1px solid var(--line);
   white-space:nowrap;overflow:hidden;
 }
+#defcon-inner{display:flex;align-items:center;gap:12px;flex:1;justify-content:center}
 #defcon .brand{font-weight:bold;letter-spacing:2px}
 #defcon .brand small{color:var(--amber-dim);letter-spacing:1px;font-weight:normal}
 #defcon .dstat b{letter-spacing:1px}
@@ -79,7 +82,7 @@ body{
 /* center panel */
 #centerPanel{padding:0}
 #cmdbar{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
   padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel2);flex-shrink:0;
 }
 #tabs{
@@ -106,9 +109,11 @@ body{
 .btn.warn:hover:not(:disabled){background:var(--red);color:#0d0d0d}
 .btn.cy{color:var(--cyan);border-color:#27606f}
 .btn.cy:hover:not(:disabled){background:var(--cyan);color:#0d0d0d}
+.btn.gr{color:var(--green);border-color:#2f6f2f}
+.btn.gr:hover:not(:disabled){background:var(--green);color:#0d0d0d}
 .tab{
   font:inherit;background:transparent;color:var(--amber-dim);
-  border:1px solid transparent;padding:1px 7px;cursor:pointer;letter-spacing:1px;
+  border:1px solid var(--line);padding:1px 7px;cursor:pointer;letter-spacing:1px;
 }
 .tab:hover{color:var(--amber)}
 .tab.on{background:var(--amber);color:#0d0d0d;text-shadow:none}
