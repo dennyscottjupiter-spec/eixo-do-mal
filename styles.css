@@ -183,6 +183,22 @@ img.emoji{height:1em;width:1.25em;margin:0 .08em;vertical-align:-0.15em;display:
 .fcard.on{border-color:var(--amber-hi);background:#2a2208;color:var(--amber-hi)}
 .fcard.on .g{color:var(--green)}
 .fcard b{font-size:16px;letter-spacing:1px}
+/* ============ NUCLEAR BLAST OVERLAY ============ */
+#blastOverlay{
+  position:fixed;inset:0;z-index:60;
+  background:#000 url('./nuclear_blast.jpg') center/cover no-repeat;
+  opacity:0;transition:opacity .15s ease;pointer-events:none;
+}
+#blastOverlay.blast-show{opacity:1;pointer-events:auto}
+#blastOverlay.blast-fade{opacity:0;transition:opacity .6s ease}
+/* ============ END-GAME STATS TABLE ============ */
+.statab{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}
+.statab th{color:var(--amber-dim);letter-spacing:1px;padding:3px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.statab th:first-child{text-align:left}
+.statab td{padding:3px 6px;border-bottom:1px dashed #2c240e;color:var(--amber);text-align:right;white-space:nowrap}
+.statab td:first-child{text-align:left}
+.statab tr.me td{color:var(--amber-hi);font-weight:bold}
+.statab tr.dead td{color:#4d4434}
 /* ============ MOBILE ============ */
 @media (max-width:840px){
   body{overflow:auto;height:auto}

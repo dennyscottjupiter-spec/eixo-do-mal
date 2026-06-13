@@ -13,6 +13,7 @@
   <button class="btn" data-a="menu" title="Open game menu: save, load, restart, resign, help">☰ MENU</button>
   <span id="defcon-inner"></span>
   <button class="btn cy" data-a="help" title="How to play — quick rules and tips">❔ HELP</button>
+  <button class="btn cy" data-a="keys" title="Keyboard shortcuts reference">⌨ KEYS</button>
 </div>
   <div id="hud"></div>
 </header>
@@ -35,7 +36,11 @@
 <div id="overOverlay" class="overlay hidden"></div>
 <div id="menuOverlay" class="overlay hidden"></div>
 <div id="helpOverlay" class="overlay hidden"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
-<script src="./game.js"></script>
+<div id="keysOverlay" class="overlay hidden"></div>
+<div id="blastOverlay" class="hidden"></div>
+<script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
+<script src="./config.js"></script>
+<script src="./engine.js"></script>
+<script src="./render.js"></script>
 </body>
 </html>
