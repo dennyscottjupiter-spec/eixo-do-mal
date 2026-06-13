@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EIXO DO MAL — World Domination Terminal</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div id="crt" aria-hidden="true"></div>
+<header id="defcon"></header>
+<main id="app">
+  <section class="panel" id="statsPanel">
+    <h2>NATION STATUS</h2>
+    <div id="stats"></div>
+  </section>
+  <section class="panel" id="centerPanel">
+    <div id="cmdbar"></div>
+    <nav id="tabs" aria-label="Actions"></nav>
+    <div id="tabContent"></div>
+    <h2 class="logTitle">EVENT LOG</h2>
+    <div id="log" aria-live="polite"></div>
+  </section>
+  <section class="panel" id="rankPanel">
+    <h2>WORLD RANKING</h2>
+    <div id="rank"></div>
+  </section>
+</main>
+<div id="factionOverlay" class="overlay"></div>
+<div id="overOverlay" class="overlay hidden"></div>
+<script src="./game.js"></script>
+</body>
+</html>
