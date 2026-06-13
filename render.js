@@ -6,12 +6,14 @@
 function renderMenu(){
   const hasSave=!!localStorage.getItem('eixo-save');
   $('keysOverlay').classList.add('hidden');
+  $('firstMovesOverlay').classList.add('hidden');
   $('menuOverlay').innerHTML=`<div class="obox" style="max-width:380px">
 <div class="sec">☰ GAME MENU</div>
 <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
   <button class="btn gr" data-a="saveGame" title="Save the current game to this browser. One save slot." ${(!G||!G.started||G.over)?'disabled':''}>💾 SAVE GAME</button>
   <button class="btn cy" data-a="loadGame" title="Load your last saved game." ${!hasSave?'disabled':''}>📂 LOAD GAME${hasSave?'':' <span class="muted">(no save found)</span>'}</button>
   <button class="btn" data-a="helpFromMenu" title="Read the quick-start rules.">❔ HOW TO PLAY</button>
+  <button class="btn cy" data-a="firstMovesFromMenu" title="See the 6 best opening moves for your first game — each with a one-line why.">📋 FIRST MOVES</button>
   <button class="btn" data-a="restartGame" title="Abandon this game and start fresh — you will pick a new faction.">🔄 RESTART (new game)</button>
   <button class="btn warn" data-a="resignGame" title="Give up and end the game in defeat." ${(!G||!G.started||G.over)?'disabled':''}>🏳️ RESIGN (forfeit)</button>
   <button class="btn" data-a="closeOverlay" title="Close this menu and return to the game." style="margin-top:6px">✖ CLOSE</button>
@@ -20,6 +22,7 @@ function renderMenu(){
 }
 function renderHelp(){
   $('keysOverlay').classList.add('hidden');
+  $('firstMovesOverlay').classList.add('hidden');
   $('helpOverlay').innerHTML=`<div class="obox" style="max-width:560px">
 <pre>
 ╔══════════════════════════════════════════════════╗
@@ -65,6 +68,7 @@ Press <b>Enter</b> (or the END TURN button) when done.</div>
 function renderKeys(){
   $('menuOverlay').classList.add('hidden');
   $('helpOverlay').classList.add('hidden');
+  $('firstMovesOverlay').classList.add('hidden');
   $('keysOverlay').innerHTML=`<div class="obox" style="max-width:400px">
 <div class="sec">⌨ KEYBOARD SHORTCUTS</div>
 <div style="margin-top:10px">
@@ -83,6 +87,28 @@ ${[
 <div style="margin-top:12px"><button class="btn" data-a="closeOverlay" title="Close shortcuts panel">✖ CLOSE</button></div>
 </div>`;
   $('keysOverlay').classList.remove('hidden');
+}
+
+function renderFirstMoves(){
+  $('menuOverlay').classList.add('hidden');
+  $('helpOverlay').classList.add('hidden');
+  $('keysOverlay').classList.add('hidden');
+  $('firstMovesOverlay').innerHTML=`<div class="obox" style="max-width:520px">
+<div class="sec">📋 YOUR FIRST 6 MOVES</div>
+<div class="muted" style="margin-bottom:10px">New to EIXO DO MAL? These opening moves give you a solid foundation every time.</div>
+${[
+  ['🌾 BUILD a Farm',            'Armies eat food every turn — run out and your population shrinks, morale collapses. Priority #1.'],
+  ['🛢️ BUILD an Oil Field',      'Tanks and jets need oil to fight at full power. One field early keeps your army fuelled all game.'],
+  ['💰 COLLECT (Space)',         'Grab half a turn\'s income instantly. Do this when you start a turn low on gold — it costs just 1 action.'],
+  ['🗺️ EXPLORE new land',       'Each building costs 1 free acre. Without land you can\'t build — explore early, before you need it.'],
+  ['🪖 TRAIN 10 Infantry',      'A small standing army deters rivals from raiding you while you build up your economy. Cheap and fast.'],
+  ['🔬 BUILD a Research Lab',   'Opens the entire tech tree. Without it nothing can be researched — and the nuclear path starts here.'],
+].map(([move,why])=>`<div class="row" style="align-items:flex-start;gap:12px;padding:7px 0">
+  <span class="grow"><b class="c">${move}</b><br><span class="muted">${why}</span></span>
+</div>`).join('')}
+<div style="margin-top:14px"><button class="btn" data-a="closeOverlay" title="Return to faction select">✖ CLOSE</button></div>
+</div>`;
+  $('firstMovesOverlay').classList.remove('hidden');
 }
 
 /* Full-screen nuclear blast image — shown on any deployNuke() call */
@@ -376,6 +402,9 @@ Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nation
       : 'DISABLED — full game: land, tech, spies, diplomacy, nukes, AI wars'}</span>
   </span>
 </button>
+<div style="margin:8px 0 4px;display:flex;gap:8px;flex-wrap:wrap">
+  <button class="btn cy" data-a="firstMoves" title="See the 6 best opening moves with a one-line reason each — great for your first game.">📋 FIRST MOVES</button>
+</div>
 <div class="sec">SELECT YOUR NATION${UI.mode==='easy'?' <span class="g">· EASY</span>':''}</div>
 <div class="fgrid">${cards}</div>
 </div>`;
@@ -387,6 +416,7 @@ function renderOver(){
   $('menuOverlay').classList.add('hidden');
   $('helpOverlay').classList.add('hidden');
   $('keysOverlay').classList.add('hidden');
+  $('firstMovesOverlay').classList.add('hidden');
   o.classList.remove('hidden');
   const R=G.result;
   const sorted=G.nations.slice().sort((a,b)=>score(b)-score(a));
@@ -463,7 +493,7 @@ document.addEventListener('keydown',e=>{
 
   // Esc = close any open overlay (always, even on game-over or faction screen)
   if(e.key==='Escape'){
-    ['menuOverlay','helpOverlay','keysOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
+    ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
     return;
   }
 
