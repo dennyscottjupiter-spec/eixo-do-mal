@@ -430,11 +430,11 @@ function renderFactionOverlay(show){
   }
   const curTheme=localStorage.getItem('eixo-theme')||'amber';
   o.innerHTML=`<div class="obox">
-<div class="eixo-title"><pre>╔══════════════════════════════════════════════════╗
-║<span class="et-hi">           ☢  E I X O   D O   M A L  ☢            </span>║
-║<span class="et-rule">  ──────────────────────────────────────────────  </span>║
-║<span class="et-sub">            2003 · WORLD DOMINATION MMO           </span>║
-╚══════════════════════════════════════════════════╝</pre></div>
+<div class="eixo-title"><pre class="et-art">    .  *  .  .  *  .  .  *  .  .  *  .  .
+               |          |
+    . . . . .  -+-  . . . -+-  . . . . .
+               |          |
+    .  *  .  .  *  .  .  *  .  .  *  .  .</pre><div class="et-wordmark"><span class="et-hi">~ ~  E I X O   D O   M A L  ~ ~</span></div><div class="et-sub-line"><span class="et-rule">──────────────────────────────────</span></div><div class="et-tagline"><span class="et-sub">2003  ·  WORLD DOMINATION MMO</span></div></div>
 <div class="muted">Six rogue nations. One throne. Explore for land, build, train, spy, invade — and reach the bomb first.
 Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nations to your will.</div>
 <button class="toggle-wrap" data-a="toggleEasy" title="${UI.mode==='easy'?'Switch to full game: land, tech, spies, diplomacy, nukes, AI wars.':'Enable easy mode: peaceful rivals, build/train/attack only, no land or nukes. Great for learning.'}">
