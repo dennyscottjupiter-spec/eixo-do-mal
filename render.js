@@ -412,18 +412,18 @@ function renderFactionOverlay(show){
   let cards='';
   for(const k in CONFIG.factions){
     const f=CONFIG.factions[k];
-    cards+=`<button class="fcard" data-a="pickFaction" data-p="${k}"><b>${f.flag} ${f.n}</b><br><span class="g">${f.bonus}</span><br><span class="muted">rogue state · UN-sanctioned</span></button>`;
+    cards+=`<button class="fcard" data-a="pickFaction" data-p="${k}" title="${f.tip}"><b>${f.flag} ${f.n}</b><br><span class="g">${f.bonus}</span><br><span class="muted">${f.tip}</span></button>`;
   }
+  const curTheme=localStorage.getItem('eixo-theme')||'amber';
   o.innerHTML=`<div class="obox">
-<pre>
-╔══════════════════════════════════════════════════╗
-║   E I X O   D O   M A L   ·   2 0 0 3   M M O    ║
-║   text-only world domination terminal            ║
-╚══════════════════════════════════════════════════╝
-</pre>
+<div class="eixo-title"><pre>╔══════════════════════════════════════════════════╗
+║<span class="et-hi">           ☢  E I X O   D O   M A L  ☢            </span>║
+║<span class="et-rule">  ──────────────────────────────────────────────  </span>║
+║<span class="et-sub">            2003 · WORLD DOMINATION MMO           </span>║
+╚══════════════════════════════════════════════════╝</pre></div>
 <div class="muted">Six rogue nations. One throne. Explore for land, build, train, spy, invade — and reach the bomb first.
 Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nations to your will.</div>
-<button class="toggle-wrap" data-a="toggleEasy">
+<button class="toggle-wrap" data-a="toggleEasy" title="${UI.mode==='easy'?'Switch to full game: land, tech, spies, diplomacy, nukes, AI wars.':'Enable easy mode: peaceful rivals, build/train/attack only, no land or nukes. Great for learning.'}">
   <span class="toggle-track${UI.mode==='easy'?' on':''}"></span>
   <span class="toggle-label">
     <b>🎓 EASY MODE</b>
@@ -433,8 +433,8 @@ Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nation
   </span>
 </button>
 <div class="theme-pick">
-  <button class="tpick${(localStorage.getItem('eixo-theme')||'amber')==='amber'?' on':''}" data-a="setTheme" data-p="amber" title="Classic amber phosphor terminal — the original CRT look.">🟠 AMBER CRT</button>
-  <button class="tpick${(localStorage.getItem('eixo-theme')||'amber')==='nasa'?' on':''}" data-a="setTheme" data-p="nasa" title="NASA Mission Control — deep-space starfield with drifting stars behind the start panel.">🚀 NASA</button>
+  <button class="tpick${curTheme==='amber'?' on':''}" data-a="setTheme" data-p="amber" title="Classic amber phosphor terminal — the original CRT look.">🟠 AMBER CRT</button>
+  <button class="tpick${curTheme==='nasa'?' on':''}" data-a="setTheme" data-p="nasa" title="NASA Mission Control — deep-space starfield with drifting stars behind the start panel.">🚀 NASA</button>
 </div>
 <div style="margin:4px 0 4px;display:flex;gap:8px;flex-wrap:wrap">
   <button class="btn cy" data-a="firstMoves" title="See the phased 10-turn opening guide — great for your first game.">📋 FIRST MOVES</button>
