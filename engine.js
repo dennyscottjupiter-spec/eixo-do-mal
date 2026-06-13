@@ -192,7 +192,6 @@ function winGame(type){
   G.over=true;
   G.result={ win:true, type,
     msg: type==='nuclear' ? 'NUCLEAR VICTORY — you deployed the warhead as the world\'s #1 power.'
-       : type==='easy'    ? 'EASY VICTORY — you mastered the basics and rose to the top of the Axis. Ready for the full game?'
                           : 'DOMINATION VICTORY — ranked #1, you bent 4 of 6 nations to your will (allies + at least one conquered vassal).' };
   log('nuke','★★★ TOTAL VICTORY ★★★');
 }
@@ -206,25 +205,25 @@ function checkAll(){
   if(G.over) return;
   for(const n of G.nations) checkDestroyed(n);
   if(G.over) return;
-  if(G.easy){
-    // easy mode: win by reaching the target networth as #1, or wiping out every rival
-    const rivals=G.nations.filter(n=>!n.isPlayer&&n.alive).length;
-    if(P().alive && (rivals===0 || (score(P())>=CONFIG.easyTargetNW && rankOf(P())===1))) winGame('easy');
-    return;
-  }
+  // last nation standing → domination win
+  const rivals=G.nations.filter(n=>!n.isPlayer&&n.alive).length;
+  if(P().alive && rivals===0){ winGame('domination'); return; }
   // domination: ranked #1 + at least 1 conquered vassal + bloc of 4 of 6
   const vassals=G.nations.filter(n=>!n.isPlayer&&n.alive&&rel(P(),n)==='vassal').length;
   const allies =G.nations.filter(n=>!n.isPlayer&&n.alive&&rel(P(),n)==='alliance').length;
   const ctrl=1+vassals+allies;
   if(ctrl>=4 && vassals>=1 && rankOf(P())===1) winGame('domination');
 }
+/* Helper: current difficulty config */
+const DCfg=()=>CONFIG.difficulty[G&&G.difficulty||'medium'];
+
 /* =====================================================================
    Layer 4: shared action helpers (used by both player and AI)
    ===================================================================== */
 function buildCostOk(n,key){
   const b=CONFIG.buildings[key];
   if(b.req && !hasTech(n,b.req)) return false;
-  if(!(G&&G.easy) && freeLand(n)<1) return false;      // buildings consume land (acres) — disabled in easy mode
+  if(freeLand(n)<1) return false;
   return n.res.gold>=b.g && n.res.industry>=b.ind;
 }
 function doBuild(n,key){
@@ -311,7 +310,7 @@ function aiSpy(n){
   return true;
 }
 function aiConsiderAttack(n){
-  if(G.turn<6) return false;                       // early-game grace period
+  if(G.turn<DCfg().atkGrace) return false;
   const Pf=CONFIG.profiles[n.personality];
   let targets=G.nations.filter(x=>x!==n&&x.alive&&(x.hitThisCycle||0)<2&&!['alliance','vassal','master'].includes(rel(n,x)));
   if(!targets.length) return false;
@@ -387,21 +386,22 @@ function aiDiplomacy(n){
     log('diplo',`${nm(n)} unilaterally sued for peace with you, fearing annihilation.`);
   }
 }
-/* macro-turn: each AI gets a budget of 6 decisions at end of turn */
+/* macro-turn: each AI gets a budget of decisions at end of turn (scales with difficulty) */
 function aiMacro(n){
-  for(let i=0;i<6;i++){
+  const dc=DCfg();
+  for(let i=0;i<dc.aiBudget;i++){
     if(!n.alive||G.over) return;
     const up=upkeep(n), inc=incomes(n);
     if(freeLand(n)<2){ n.land+=rint(6,12); continue; }
     if(n.res.food < up.food*2 && inc.food-up.food<0 && doBuild(n,'farm')) continue;
-    if(!G.easy && G.turn>30 && chance(0.35) && aiNukeStep(n)) continue;
+    if(G.turn>30 && chance(0.35) && aiNukeStep(n)) continue;
     if(chance(0.20) && aiResearch(n)) continue;
     if(chance(CONFIG.profiles[n.personality].spy) && aiSpy(n)) continue;
     if(chance(0.5) ? (aiBuildWeighted(n)||aiTrainWeighted(n)) : (aiTrainWeighted(n)||aiBuildWeighted(n))) continue;
     n.res.gold += Math.floor(n.res.pop*0.12);
   }
-  if(n.alive && !G.over && !G.easy && chance(0.6)) aiConsiderAttack(n);   // easy mode: rivals never invade
-  if(n.alive && !G.over && !G.easy) aiDiplomacy(n);
+  if(n.alive && !G.over && chance(dc.aiAtk)) aiConsiderAttack(n);
+  if(n.alive && !G.over) aiDiplomacy(n);
 }
 
 /* =====================================================================
@@ -436,12 +436,12 @@ function endTurn(){
     if(r===1 && was!==1 && rankOf(P())!==1) log('intel',`📡 ${nm(n)} has risen to #1 on the world ranking — they are now the dominant power.`);
     n._lastRank=r;
   }}
-  // coalition pressure: dominate too long and the world turns on you (disabled in easy mode)
-  if(!G.over && !G.easy){
+  // coalition pressure: dominate too long and the world turns on you
+  if(!G.over && DCfg().coalition!==false){
     if(rankOf(P())===1){ G.streak++; } else G.streak=0;
-    if(G.streak>=5 && !G.coalition){
+    if(G.streak>=DCfg().coalition && !G.coalition){
       G.coalition=true;
-      log('diplo','⚠️ WORLD ALERT: you have been ranked #1 for 5 turns. The rogue states are uniting against you — expect attacks from multiple nations.');
+      log('diplo','⚠️ WORLD ALERT: you have dominated too long. The rogue states are uniting against you — expect attacks from multiple nations.');
     }
   }
   // IMF: accrue compound interest on player debt, then drift the rate
@@ -466,7 +466,7 @@ const H = {
   /* ---- meta ---- */
   tab:(p)=>{ UI.tab=p; UI.attackTarget=null; render(); },
   newGame:()=>{ G=null; UI.tab='build'; UI.attackTarget=null; render(); },
-  toggleEasy:()=>{ UI.mode = UI.mode==='easy' ? 'normal' : 'easy'; render(); },
+  setDifficulty:(p)=>{ UI.difficulty=p; render(); },
   pickFaction:(p)=>initGame(p),
   back:()=>{ UI.attackTarget=null; render(); },
   menu:()=>renderMenu(),
@@ -487,7 +487,7 @@ const H = {
   saveGame:()=>{
     if(!G||!G.started||G.over) return;
     try{
-      localStorage.setItem('eixo-save',JSON.stringify({G,UImode:UI.mode,UItab:UI.tab,UIatk:UI.attackTarget}));
+      localStorage.setItem('eixo-save',JSON.stringify({G,UIdiff:UI.difficulty,UItab:UI.tab,UIatk:UI.attackTarget}));
       if(G&&G.started) log('sys','💾 Game saved to browser storage.');
       $('menuOverlay').classList.add('hidden'); render();
     } catch(e){ alert('Save failed: '+e.message); }
@@ -497,7 +497,7 @@ const H = {
     if(!raw){ alert('No saved game found.'); return; }
     try{
       const s=JSON.parse(raw);
-      G=s.G; UI.mode=s.UImode||'normal'; UI.tab=s.UItab||'build'; UI.attackTarget=s.UIatk||null;
+      G=s.G; UI.difficulty=s.UIdiff||'medium'; UI.tab=s.UItab||'build'; UI.attackTarget=s.UIatk||null;
       $('menuOverlay').classList.add('hidden'); $('helpOverlay').classList.add('hidden');
       $('keysOverlay').classList.add('hidden'); $('firstMovesOverlay').classList.add('hidden');
       $('statsOverlay').classList.add('hidden');
@@ -540,7 +540,7 @@ const H = {
     afterAction();
   },
   build:(p)=>{
-    if(!G.easy && freeLand(P())<1){ log('sys','No free land. EXPLORE to claim acres first.'); render(); return; }
+    if(freeLand(P())<1){ log('sys','No free land. EXPLORE to claim acres first.'); render(); return; }
     if(!buildCostOk(P(),p)){ log('sys','Cannot afford that structure.'); render(); return; }
     if(!spend(1)) return;
     doBuild(P(),p);

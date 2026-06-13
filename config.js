@@ -71,7 +71,21 @@ const CONFIG = {
     'Satellite uplink: 6 rogue states detected.',
     'UN sanctions in effect. Nobody cares.',
     'Your reign begins. The world is watching.'
-  ]
+  ],
+  difficulty:{
+    easy:   { label:'EASY',    aiStart:0.85, playerBonus:{gold:2500,food:500},
+              coalition:false, atkGrace:10, aiAtk:0.35, aiBudget:5,
+              blurb:'Forgiving — weak rivals, a head start, no coalition. Learn the ropes.' },
+    medium: { label:'MEDIUM',  aiStart:1.0,  playerBonus:null,
+              coalition:5, atkGrace:6,  aiAtk:0.60, aiBudget:6,
+              blurb:'Balanced — the classic game. A fair fight.' },
+    hard:   { label:'HARD',    aiStart:1.35, playerBonus:null,
+              coalition:4, atkGrace:4,  aiAtk:0.80, aiBudget:7,
+              blurb:'Rivals start richer, strike sooner, and gang up faster.' },
+    extreme:{ label:'EXTREME', aiStart:1.7,  playerBonus:null,
+              coalition:3, atkGrace:2,  aiAtk:0.95, aiBudget:8,
+              blurb:'Brutal — wealthy, relentless rivals and an early coalition.' }
+  }
 };
 
 /* ---------- tiny utils ---------- */
@@ -96,7 +110,7 @@ function asciiBar(v,max,len){
 
 /* ---------- game state ---------- */
 let G = null;                                   // single source of truth
-const UI = { tab:'build', attackTarget:null, mode:'normal' };  // view-only state
+const UI = { tab:'build', attackTarget:null, difficulty:'medium' };  // view-only state
 
 function newNation(faction,isPlayer,personality){
   return {
@@ -115,14 +129,18 @@ function initGame(playerFaction){
   G = {
     turn:1, actions:CONFIG.actionsPerTurn, nations:[], log:[],
     over:false, result:null, streak:0, coalition:false, started:true,
-    easy: UI.mode==='easy', imfRate:0.08
+    difficulty: UI.difficulty||'medium', imfRate:0.08
   };
   G.nations.push(newNation(playerFaction,true,null));
   others.forEach((f,i)=>G.nations.push(newNation(f,false,persL[i%persL.length])));
-  if(G.easy){ P().res.gold+=2000; P().res.food+=400; }
-  log('sys', G.easy
-    ? '— TURN 1 · EASY MODE — Collect, build, train, attack. Rivals stay peaceful. Learn the ropes.'
-    : '— TURN 1 — Choose your moves wisely. 10 actions per turn.');
+  const dc=CONFIG.difficulty[G.difficulty];
+  if(dc.playerBonus){ P().res.gold+=dc.playerBonus.gold; P().res.food+=dc.playerBonus.food; }
+  G.nations.filter(n=>!n.isPlayer).forEach(n=>{
+    n.res.gold=Math.floor(n.res.gold*dc.aiStart);
+    n.army.infantry=Math.floor(n.army.infantry*dc.aiStart);
+    n.army.tank=Math.floor(n.army.tank*dc.aiStart);
+  });
+  log('sys',`— TURN 1 · ${dc.label} — ${dc.blurb}`);
   bootSequence();
   render();
 }
