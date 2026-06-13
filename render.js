@@ -57,7 +57,7 @@ Press <b>Enter</b> (or the END TURN button) when done.</div>
 <div class="sec">WIN CONDITIONS</div>
 <div class="muted">
 ☢️ <b>Nuclear</b>    — deploy a warhead while ranked #1
-♟  <b>Domination</b> — you + allies + vassals = 4 of 6 nations
+♟  <b>Domination</b> — ranked #1 + control 4 of 6 (allies + ≥1 conquered vassal)
 🎓 <b>Easy mode</b>  — reach $60,000 net worth as #1, or eliminate all rivals
 </div>
 <div style="margin-top:14px"><button class="btn" data-a="closeOverlay" title="Return to the game">✖ CLOSE</button></div>
@@ -367,7 +367,7 @@ function renderTabContent(){
       else if(r==='vassal') btns=`<span class="g">pays you tribute ♟</span>`;
       h+=`<div class="row"><span class="grow">${fb(x).flag} <b>${nm(x)}</b> <span class="v">${REL_ICON[r]} ${r.toUpperCase()}</span> <span class="dim">${x.personality||''}</span></span>${btns}</div>`;
     }
-    h+=`<div class="muted" style="margin-top:8px">Domination victory: control 4 of 6 nations (you + vassals + allies).</div>`;
+    h+=`<div class="muted" style="margin-top:8px">Domination victory: be ranked <b>#1</b> with 4 of 6 nations in your bloc (you + allies + vassals), including <b>at least 1 conquered vassal</b>. Pure alliances alone are not enough.</div>`;
   }
   $('tabContent').innerHTML=h;
 }
@@ -554,4 +554,11 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+function applyTheme(t){
+  document.body.className=document.body.className.replace(/\btheme-\S+/g,'').trim();
+  if(t&&t!=='amber') document.body.classList.add('theme-'+t);
+  localStorage.setItem('eixo-theme',t||'amber');
+}
+
+applyTheme(localStorage.getItem('eixo-theme')||'amber');
 render();   // first paint → faction select

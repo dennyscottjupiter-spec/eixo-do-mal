@@ -179,7 +179,7 @@ function winGame(type){
   G.result={ win:true, type,
     msg: type==='nuclear' ? 'NUCLEAR VICTORY — you deployed the warhead as the world\'s #1 power.'
        : type==='easy'    ? 'EASY VICTORY — you mastered the basics and rose to the top of the Axis. Ready for the full game?'
-                          : 'DOMINATION VICTORY — you control 4 of the 6 nations of the Axis.' };
+                          : 'DOMINATION VICTORY — ranked #1, you bent 4 of 6 nations to your will (allies + at least one conquered vassal).' };
   log('nuke','★★★ TOTAL VICTORY ★★★');
 }
 function loseGame(reason){
@@ -198,9 +198,11 @@ function checkAll(){
     if(P().alive && (rivals===0 || (score(P())>=CONFIG.easyTargetNW && rankOf(P())===1))) winGame('easy');
     return;
   }
-  // domination: you + your vassals + allies control 4 of 6
-  const ctrl = 1 + G.nations.filter(n=>!n.isPlayer&&n.alive&&['vassal','alliance'].includes(rel(P(),n))).length;
-  if(ctrl>=4) winGame('domination');
+  // domination: ranked #1 + at least 1 conquered vassal + bloc of 4 of 6
+  const vassals=G.nations.filter(n=>!n.isPlayer&&n.alive&&rel(P(),n)==='vassal').length;
+  const allies =G.nations.filter(n=>!n.isPlayer&&n.alive&&rel(P(),n)==='alliance').length;
+  const ctrl=1+vassals+allies;
+  if(ctrl>=4 && vassals>=1 && rankOf(P())===1) winGame('domination');
 }
 /* =====================================================================
    Layer 4: shared action helpers (used by both player and AI)
@@ -587,9 +589,10 @@ const H = {
     if(q==='ally'){
       const base=CONFIG.profiles[t.personality].acceptAlly;
       const ratio=score(me)/Math.max(score(t),1);
-      const ok = ratio>0.5 && ratio<2.5 && chance(base + (rel(me,t)==='war'?-0.3:0));
+      const earlyWary=clamp(G.turn/8,0.25,1); // nations are suspicious of unknown powers early-game
+      const ok = ratio>0.5 && ratio<2.5 && chance((base + (rel(me,t)==='war'?-0.3:0))*earlyWary);
       if(ok){ setRel(me,t,'alliance'); log('diplo',`🤝 ${nm(t)} accepted your alliance proposal. They count toward your Domination victory.`); }
-      else log('diplo',`🤝 ${nm(t)} rejected your alliance proposal. Try again when you are closer in power.`);
+      else log('diplo',`🤝 ${nm(t)} rejected your alliance proposal. ${G.turn<8?'Nations distrust strangers early in the game — build power and try again later.':'Try again when you are closer in power.'}`);
     } else if(q==='war'){
       setWar(me,t);
     } else if(q==='peace'){
