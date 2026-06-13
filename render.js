@@ -127,31 +127,31 @@ function renderDefcon(){
 /* renderHud — sticky top resource bar, redrawn every action */
 function renderHud(){
   const n=P(), inc=incomes(n), up=upkeep(n);
-  const chip=(icon,val,delta)=>{
+  const chip=(icon,val,delta,tip)=>{
     const cls=delta>=0?'g':'r', sign=delta>=0?'+':'';
-    return `<span class="hchip">${icon} <span class="hval">${fmt(val)}</span><span class="hdelta ${cls}">${sign}${fmt(delta)}</span></span>`;
+    return `<span class="hchip" title="${tip}">${icon} <span class="hval">${fmt(val)}</span><span class="hdelta ${cls}">${sign}${fmt(delta)}</span></span>`;
   };
   let h='';
-  h+=chip('💰',n.res.gold,Math.round(inc.gold));
+  h+=chip('💰',n.res.gold,Math.round(inc.gold),'Gold — your main currency. Spend on buildings, troops, tech and market. The +number is next turn\'s income.');
   h+=`<span class="hud-sep">|</span>`;
-  h+=chip('🛢️',n.res.oil,Math.round(inc.oil-up.oil));
+  h+=chip('🛢️',n.res.oil,Math.round(inc.oil-up.oil),'Oil — fuel for tanks and jets. Running out cuts their combat power by 50%. +number is net oil gain per turn.');
   if(n.oilShort) h+=`<span class="oilshort-badge">OIL!</span>`;
   h+=`<span class="hud-sep">|</span>`;
-  h+=chip('🌾',n.res.food,Math.round(inc.food-up.food));
+  h+=chip('🌾',n.res.food,Math.round(inc.food-up.food),'Food — feeds your army and population. Famine drops population 5% and collapses morale. +number is net food per turn.');
   h+=`<span class="hud-sep">|</span>`;
-  h+=chip('⚙️',n.res.industry,Math.round(inc.ind));
+  h+=chip('⚙️',n.res.industry,Math.round(inc.ind),'Industry — multiplies all building output (up to 2×). More factories = faster gold, oil, food, and research. +number gained per turn.');
   h+=`<span class="hud-sep">|</span>`;
-  h+=`<span class="hchip">👥 <span class="hval">${fmt(n.res.pop)}</span><span class="hdelta dim">/${fmt(popCap(n))}</span></span>`;
+  h+=`<span class="hchip" title="Population — sets your base gold income (pop × 0.5 per turn). Rises 2%/turn when fed; shown as current / capacity.">👥 <span class="hval">${fmt(n.res.pop)}</span><span class="hdelta dim">/${fmt(popCap(n))}</span></span>`;
   if(!G.easy){
     h+=`<span class="hud-sep">|</span>`;
-    h+=`<span class="hchip">🗺 <span class="hval">${fmt(freeLand(n))}</span><span class="hdelta dim"> free ac.</span></span>`;
+    h+=`<span class="hchip" title="Free land — acres available to build on. Each building costs 1 acre. Use EXPLORE to claim more land.">🗺 <span class="hval">${fmt(freeLand(n))}</span><span class="hdelta dim"> free ac.</span></span>`;
   }
   h+=`<span class="hud-sep">|</span>`;
-  h+=`<span class="hchip dim">⚔ <span class="hval">${fmt(atkPower(n,n.army))}</span></span>`;
+  h+=`<span class="hchip dim" title="Attack power — combined offensive strength: infantry + tanks×4 + jets×6, scaled by morale and tech bonuses.">⚔ <span class="hval">${fmt(atkPower(n,n.army))}</span></span>`;
   h+=`<span class="hud-sep">·</span>`;
-  h+=`<span class="hchip dim">🛡 <span class="hval">${fmt(defPower(n))}</span></span>`;
+  h+=`<span class="hchip dim" title="Defense power — your ability to repel invasions. Boosted by turrets, bunkers, and your defensive tech bonus.">🛡 <span class="hval">${fmt(defPower(n))}</span></span>`;
   h+=`<span class="hud-sep">|</span>`;
-  h+=`<span class="hchip"><span class="dim">morale </span><span class="bar dim">[${asciiBar(n.morale,150,8)}]</span> <span class="hval">${n.morale}</span></span>`;
+  h+=`<span class="hchip" title="Morale — multiplies attack power (max 150). Rises slowly in peacetime; drops from defeats, famine, or nuclear strikes."><span class="dim">morale </span><span class="bar dim">[${asciiBar(n.morale,150,8)}]</span> <span class="hval">${n.morale}</span></span>`;
   $('hud').innerHTML=h;
 }
 
