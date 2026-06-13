@@ -8,10 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 index.html        — markup only; links the 3 JS files + styles.css
-styles.css        — amber CRT design tokens, layout, widgets (~220 lines)
-config.js         — Layer 1: CONFIG, state, utils, accessors, relations (~160 lines)
-engine.js         — Layers 2–6: economy, combat, AI, player handlers (~450 lines)
-render.js         — Layers 7–8: all rendering, overlays, keyboard wiring (~480 lines)
+styles.css        — amber CRT design tokens, layout, widgets, NASA theme (~290 lines)
+config.js         — Layer 1: CONFIG, state, utils, accessors, relations (~170 lines)
+engine.js         — Layers 2–6: economy, combat, AI, player handlers (~620 lines)
+render.js         — Layers 7–8: all rendering, overlays, keyboard wiring (~540 lines)
 nuclear_blast.jpg — full-screen flash asset used on any nuke detonation
 .nojekyll         — empty; prevents GitHub Pages Jekyll build
 ```
@@ -33,8 +33,13 @@ The three JS files map 1-to-1 to the 8 layer comments inside them. Read layers t
 ### config.js — Layer 1
 `CONFIG` holds **every** balance number (buildings, units, factions, techs, AI profiles). Tune gameplay here, not in logic. `G` is the single source of truth (one mutable game-state object); `UI` holds view-only state (`tab`, `attackTarget`, `mode`). `newNation()` / `initGame()` build `G`.
 
+**Faction pool is 11** (iran, iraq, northkorea, cuba, libya, syria, brazil, usa, russia, china, netherlands) but each game seats exactly **6** (player + 5 random rivals via `others.slice(0,5)`). Every faction entry has: `flag`, `bonus`, `tip` (one-liner shown on the start screen), and one wired bonus key (`gold`, `oil`, `pop`, `atk`, `def`, or `spyCost`). Only these 6 keys are wired in engine calculations — new factions must use only them.
+
+**IMF state:** `G.imfRate` (starts 0.08, drifts 0.04–0.16 each turn); `n.debt` on each nation (only player debt is ever non-zero). `score()` subtracts `n.debt` so borrowed gold can't fake a win.
+
 ### engine.js — Layers 2–6
 - **Economy** — `incomes()`, `upkeep()`, `econTick()` run per-nation each turn.
+- **IMF loans** — `H.loan(amt)` borrows gold + adds to `P().debt`; `H.repay(amt|'all')` pays down; `endTurn` accrues compound interest on debt and drifts `G.imfRate`.
 - **Combat/spies/missiles/nukes** — `resolveAttack()`, `scudStrike()`, `spyMission()`, `deployNuke()`. `deployNuke` calls `showBlast()` (defined in render.js — safe because render.js is fully loaded before any user action can trigger it).
 - **Shared action helpers** — `doBuild`/`doTrain`/`doResearch` and their `*CostOk` guards. **Both the player and the AI call these** — keep them side-effect-only on `G`.
 - **AI brains** — `aiMicro()` = one cheap move after each player action; `aiMacro()` = ~6 decisions per AI at end of turn.
@@ -42,8 +47,9 @@ The three JS files map 1-to-1 to the 8 layer comments inside them. Read layers t
 
 ### render.js — Layers 7–8
 `render()` rewrites the **entire** UI from `G` on every call. No partial DOM updates — mutate state, then call `render()`. Also contains:
+- `applyTheme(t)` — sets `body.theme-{t}` class + persists to `localStorage['eixo-theme']`. Called once at boot before the first `render()`.
 - `showBlast()` — unhides `#blastOverlay` for 2.2 s on any nuke.
-- `renderMenu()`, `renderHelp()`, `renderKeys()` — overlay panels.
+- `renderMenu()`, `renderHelp()`, `renderKeys()`, `renderFirstMoves()` — overlay panels.
 - `renderOver()` — game-over screen including FINAL STATISTICS comparison table.
 - ONE delegated `click` listener (reads `data-a`/`data-p`/`data-q`) and the full keyboard handler (Konami, Enter, Space, X, 1–7, ?, Esc).
 
@@ -51,21 +57,24 @@ The three JS files map 1-to-1 to the 8 layer comments inside them. Read layers t
 
 `checkAll()` is called after every action and at end of turn:
 
-- **Domination** (`winGame('domination')`) — you + vassals + allies ≥ 4 of the 6 nations. Normal mode only.
+- **Domination** (`winGame('domination')`) — ranked **#1** AND you + allies + vassals ≥ 4 of the 6 nations AND **at least 1 vassal** (pure alliances alone don't win). Normal mode only.
 - **Nuclear** (`winGame('nuclear')`) — player deploys a warhead while ranked #1.
 - **Easy** (`winGame('easy')`) — reach `CONFIG.easyTargetNW` ($60,000) as #1, or eliminate every rival.
 - **Defeat** — player's population hits 0 or all buildings destroyed.
 
 **Coalition mechanic:** after ≥ 5 consecutive turns at #1 (`G.streak >= 5`), `G.coalition` is set; AI nations may declare war on the player (30% chance per turn via `aiDiplomacy`). Disabled in Easy Mode.
 
+**Alliance acceptance** ramps from 25% → 100% of base chance over the first 8 turns (`earlyWary = clamp(G.turn/8, 0.25, 1)`) so turn-1 alliance spamming doesn't trivially win.
+
 ### Key conventions when editing
 
 - **State → render, never DOM-first.** Mutate `G` then call `render()`. Never hand-patch DOM nodes.
-- **New player action = 3 edits:** add a handler to `H` (engine.js), emit a button with `data-a="yourKey"` in `renderTabContent` (render.js), gate with `spend(n)` if it costs an action.
-- **New building/unit/tech/faction = a CONFIG entry** (config.js); render loops iterate `CONFIG` generically.
+- **New player action = 3 edits:** add a handler to `H` (engine.js), emit a button with `data-a="yourKey"` in the appropriate render function (render.js), gate with `spend(n)` if it costs an action.
+- **New building/unit/tech/faction = a CONFIG entry** (config.js); render loops iterate `CONFIG` generically. New factions also need a `tip:` field and must use only the 6 wired bonus keys.
 - **Player is always `G.nations[0]`** (`P()`). Accessors: `nm()`, `fb()`, `byId()`, `rel()`.
 - **Win/lose flows through `checkDestroyed` → `checkAll`.** Never set `G.over` directly.
-- **Overlays:** `menuOverlay`, `helpOverlay`, `keysOverlay`, `blastOverlay`, `overOverlay`. `closeOverlay` handler hides the first three. `renderOver` hides all three when the game ends.
+- **Overlays:** `menuOverlay`, `helpOverlay`, `keysOverlay`, `firstMovesOverlay`, `blastOverlay`, `overOverlay`. Every new overlay must be added to **all five** places: `closeOverlay` handler, `loadGame`, `renderMenu`, `renderHelp`/`renderKeys`, `renderOver`, and the Esc key array.
+- **Themes:** `applyTheme('amber'|'nasa')` is the only way to switch themes. `body.theme-nasa` CSS lives in styles.css. To add a third theme, add a `body.theme-X {}` block in CSS and a `.tpick` button in `renderFactionOverlay`.
 
 ## Conventions
 
