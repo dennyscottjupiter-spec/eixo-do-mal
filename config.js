@@ -39,7 +39,8 @@ const CONFIG = {
     usa:         { n:'USA',         flag:'🇺🇸', bonus:'Attack power +15%', tip:'Best attack multiplier in the game — your army punches far above its weight class.', atk:1.15 },
     russia:      { n:'Russia',      flag:'🇷🇺', bonus:'Oil income +15%',   tip:'Oil-rich superpower — tanks and jets always fuelled, dominates long wars and late combat.', oil:1.15 },
     china:       { n:'China',       flag:'🇨🇳', bonus:'Gold income +15%',  tip:'Highest gold income multiplier — builds faster, researches earlier, and arms the largest army.', gold:1.15 },
-    netherlands: { n:'Netherlands', flag:'🇳🇱', bonus:'Defense +15%',      tip:'Fortified nation with the best defense bonus — ideal for a turtle-then-nuke strategy.', def:1.15 }
+    netherlands: { n:'Netherlands', flag:'🇳🇱', bonus:'Defense +15%',      tip:'Fortified nation with the best defense bonus — ideal for a turtle-then-nuke strategy.', def:1.15 },
+    pakistan:    { n:'Pakistan',    flag:'🇵🇰', bonus:'Attack power +10%', tip:'Battle-hardened military with a nuclear doctrine — your ground forces hit 10% harder for the same training cost.', atk:1.10 }
   },
   techs: [
     { id:'advAgri',        tier:1, n:'Advanced Agriculture', g:800,  d:'+10% food production' },
