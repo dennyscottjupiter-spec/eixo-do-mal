@@ -12,8 +12,9 @@ function renderMenu(){
 <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
   <button class="btn gr" data-a="saveGame" title="Save the current game to this browser. One save slot." ${(!G||!G.started||G.over)?'disabled':''}>💾 SAVE GAME</button>
   <button class="btn cy" data-a="loadGame" title="Load your last saved game." ${!hasSave?'disabled':''}>📂 LOAD GAME${hasSave?'':' <span class="muted">(no save found)</span>'}</button>
-  <button class="btn" data-a="helpFromMenu" title="Read the quick-start rules.">❔ HOW TO PLAY</button>
-  <button class="btn cy" data-a="firstMovesFromMenu" title="See the 6 best opening moves for your first game — each with a one-line why.">📋 FIRST MOVES</button>
+  <button class="btn" data-a="helpFromMenu" title="Read the full how-to-play guide — combat, economy, espionage, diplomacy.">❔ HOW TO PLAY</button>
+  <button class="btn cy" data-a="firstMovesFromMenu" title="See the phased 10-turn opening guide.">📋 FIRST MOVES</button>
+  <button class="btn cy" data-a="statsFromMenu" title="See live standings and statistics for all nations — same view as end-of-game." ${(!G||!G.started||G.over)?'disabled':''}>📊 STATISTICS</button>
   <button class="btn" data-a="restartGame" title="Abandon this game and start fresh — you will pick a new faction.">🔄 RESTART (new game)</button>
   <button class="btn warn" data-a="resignGame" title="Give up and end the game in defeat." ${(!G||!G.started||G.over)?'disabled':''}>🏳️ RESIGN (forfeit)</button>
   <button class="btn" data-a="closeOverlay" title="Close this menu and return to the game." style="margin-top:6px">✖ CLOSE</button>
@@ -486,6 +487,7 @@ function renderOver(){
   $('helpOverlay').classList.add('hidden');
   $('keysOverlay').classList.add('hidden');
   $('firstMovesOverlay').classList.add('hidden');
+  $('statsOverlay').classList.add('hidden');
   o.classList.remove('hidden');
   const R=G.result;
   const sorted=G.nations.slice().sort((a,b)=>score(b)-score(a));
@@ -529,6 +531,41 @@ function renderOver(){
 </div>`;
 }
 
+function renderStats(){
+  ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay'].forEach(id=>$(id).classList.add('hidden'));
+  const o=$('statsOverlay');
+  const sorted=G.nations.slice().sort((a,b)=>score(b)-score(a));
+  const rows=sorted.map((n,i)=>
+    `<div class="rrow${n.isPlayer?' me':''}${n.alive?'':' dead'}"><span class="pos">#${i+1}</span>`+
+    `<span class="nn">${fb(n).flag} ${nm(n)}${n.isPlayer?' (YOU)':''}</span>`+
+    `<span class="sc">${n.alive?'$'+fmt(score(n)):'FALLEN'}</span></div>`).join('');
+  const statRows=sorted.map(n=>{
+    const isMe=n.isPlayer, isDead=!n.alive;
+    return `<tr class="${isMe?'me':''}${isDead?' dead':''}">
+      <td>${fb(n).flag} ${nm(n)}${isMe?' (YOU)':''}</td>
+      <td>${isDead?'—':'$'+fmt(score(n))}</td>
+      <td>${isDead?'—':fmt(n.res.gold)}</td>
+      <td>${isDead?'—':fmt(atkPower(n,n.army))}</td>
+      <td>${isDead?'—':fmt(n.res.pop)}</td>
+      <td>${isDead?'—':fmt(n.land)}</td>
+      <td>${isDead?'—':totalBuildings(n)}</td>
+      <td>${isDead?'—':n.techs.length}</td>
+    </tr>`;
+  }).join('');
+  o.innerHTML=`<div class="obox">
+<div class="sec">📊 LIVE STANDINGS · TURN ${G.turn}</div>
+<div class="muted" style="margin-bottom:8px">Net worth = gold + pop×2 + army×3 + land×40 + buildings×500 + techs×1,000 − debt</div>
+${rows}
+<div class="sec">COMPARATIVE STATISTICS</div>
+<table class="statab">
+  <thead><tr><th>NATION</th><th>NETWORTH</th><th>💰 GOLD</th><th>⚔ MILITARY</th><th>👥 POP</th><th>🗺 LAND</th><th>🏗 BLDGS</th><th>🔬 TECH</th></tr></thead>
+  <tbody>${statRows}</tbody>
+</table>
+<div style="margin-top:14px"><button class="btn" data-a="closeOverlay" title="Close statistics and return to the game">✖ CLOSE</button></div>
+</div>`;
+  o.classList.remove('hidden');
+}
+
 /* ---------- boot flavor: staggered teletype lines at game start ---------- */
 function bootSequence(){
   const myG=G;
@@ -562,7 +599,7 @@ document.addEventListener('keydown',e=>{
 
   // Esc = close any open overlay (always, even on game-over or faction screen)
   if(e.key==='Escape'){
-    ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
+    ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay','statsOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
     return;
   }
 

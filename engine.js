@@ -467,7 +467,9 @@ const H = {
     $('helpOverlay').classList.add('hidden');
     $('keysOverlay').classList.add('hidden');
     $('firstMovesOverlay').classList.add('hidden');
+    $('statsOverlay').classList.add('hidden');
   },
+  statsFromMenu:()=>{ $('menuOverlay').classList.add('hidden'); renderStats(); },
   saveGame:()=>{
     if(!G||!G.started||G.over) return;
     try{
@@ -484,6 +486,7 @@ const H = {
       G=s.G; UI.mode=s.UImode||'normal'; UI.tab=s.UItab||'build'; UI.attackTarget=s.UIatk||null;
       $('menuOverlay').classList.add('hidden'); $('helpOverlay').classList.add('hidden');
       $('keysOverlay').classList.add('hidden'); $('firstMovesOverlay').classList.add('hidden');
+      $('statsOverlay').classList.add('hidden');
       log('sys','📂 Game loaded from browser storage.'); render();
     } catch(e){ alert('Load failed — save data may be corrupted.'); }
   },
