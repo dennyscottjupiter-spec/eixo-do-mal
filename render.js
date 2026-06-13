@@ -50,7 +50,6 @@ Press <b>Enter</b> (or the END TURN button) when done.</div>
 • Build <b>Farms</b> early — starving armies collapse fast.
 • The <b>World Ranking</b> on the right shows who to fear (or attack).
 • Dominate #1 for 5 turns in a row → rivals form a <b>coalition</b> against you.
-• <b>Konami code</b> ↑↑↓↓←→←→BA → +9,999 gold cheat.
 </div>
 <div class="sec">WIN CONDITIONS</div>
 <div class="muted">
@@ -76,7 +75,6 @@ ${[
   ['1 – 7',     'Switch tabs: BUILD / TRAIN / MARKET / ATTACK / SPY / TECH / DIPLO'],
   ['?',         'Open How to Play'],
   ['Esc',       'Close this panel / overlays'],
-  ['↑↑↓↓←→←→BA','Cheat: +9,999 gold'],
 ].map(([k,d])=>`<div class="kv" style="padding:5px 0;border-bottom:1px dashed #2c240e">
   <span class="c" style="min-width:130px;display:inline-block"><b>${k}</b></span>
   <span class="muted">${d}</span>
