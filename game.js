@@ -589,7 +589,7 @@ const H = {
   /* ---- meta ---- */
   tab:(p)=>{ UI.tab=p; UI.attackTarget=null; render(); },
   newGame:()=>{ G=null; UI.tab='build'; UI.attackTarget=null; render(); },
-  mode:(p)=>{ UI.mode=p; render(); },
+  toggleEasy:()=>{ UI.mode = UI.mode==='easy' ? 'normal' : 'easy'; render(); },
   pickFaction:(p)=>initGame(p),
   back:()=>{ UI.attackTarget=null; render(); },
 
@@ -973,12 +973,16 @@ function renderFactionOverlay(show){
 </pre>
 <div class="muted">Six rogue nations. One throne. Explore for land, build, train, spy, invade — and reach the bomb first.
 Win by detonating a warhead as the world's #1 power, or by bending 4 of 6 nations to your will.</div>
-<div class="sec">GAME MODE</div>
-<div class="fgrid" style="grid-template-columns:1fr 1fr;margin-bottom:6px">
-  <button class="fcard${UI.mode==='normal'?' on':''}" data-a="mode" data-p="normal"><b>⚔ NORMAL</b><br><span class="muted">full game — land, tech, spies, diplomacy, nukes, AI rivals fight back</span></button>
-  <button class="fcard${UI.mode==='easy'?' on':''}" data-a="mode" data-p="easy"><b>🎓 EASY MODE</b><br><span class="g">learn the basics — just build, train, attack. peaceful rivals, no nukes.</span></button>
-</div>
-<div class="sec">SELECT YOUR NATION ${UI.mode==='easy'?'<span class="g">· EASY MODE</span>':''}</div>
+<button class="toggle-wrap" data-a="toggleEasy">
+  <span class="toggle-track${UI.mode==='easy'?' on':''}"></span>
+  <span class="toggle-label">
+    <b>🎓 EASY MODE</b>
+    <span class="toggle-desc">${UI.mode==='easy'
+      ? '✔ ENABLED — peaceful rivals, build/train/attack only, no land or nukes'
+      : 'DISABLED — full game: land, tech, spies, diplomacy, nukes, AI wars'}</span>
+  </span>
+</button>
+<div class="sec">SELECT YOUR NATION${UI.mode==='easy'?' <span class="g">· EASY</span>':''}</div>
 <div class="fgrid">${cards}</div>
 </div>`;
 }
