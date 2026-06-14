@@ -36,7 +36,9 @@ function econTick(n){
     const growth = 1 + 0.02*(f.pop||1);            // Cuba grows 2.2%/turn
     r.pop = Math.min(popCap(n), Math.floor(r.pop*growth));
   }
-  n.morale = clamp(n.morale + (n.morale<100?5:(n.morale>100?-3:0)),20,150);
+  const wars=Object.values(n.relations).filter(r=>r==='war').length;
+  const warDrain=Math.min(wars*2,10);
+  n.morale = clamp(n.morale + (n.morale<100?5:(n.morale>100?-3:0)) - warDrain,20,150);
   // passive nuclear research with an active facility
   if(n.b.nuclearFacility>0 && hasTech(n,'nuclearPhysics') && n.nukeProg<CONFIG.warhead.researchNeeded)
     n.nukeProg++;
@@ -104,7 +106,7 @@ function scudStrike(att,def){
   att.army.scud--; setWar(att,def); def.lastAttackedBy=att.id;
   const hitP = clamp(0.75 - def.army.jet*0.005, 0.2, 0.9);
   if(chance(hitP)){
-    const destroyed=[]; const nDest=rint(1,2);
+    const destroyed=[]; const nDest=rint(2,3);
     for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
     log('war',`🚀 SCUD missile from ${nm(att)} hit ${nm(def)}${destroyed.length?` — destroyed: ${destroyed.join(', ')}.`:' — landed in empty fields, no buildings hit.'}`);
     checkDestroyed(def);
@@ -239,7 +241,8 @@ function doBuild(n,key){
 }
 function unitGoldCost(n,key){
   const u=CONFIG.units[key];
-  return u.g * u.batch * (key==='spy'?(fb(n).spyCost||1):1);
+  const mult = key==='spy' ? (fb(n).spyCost||1) : ['infantry','tank','jet'].includes(key) ? (fb(n).trainCost||1) : 1;
+  return u.g * u.batch * mult;
 }
 function trainCostOk(n,key){
   const u=CONFIG.units[key];
@@ -416,6 +419,7 @@ function afterAction(){ aiMicro(); checkAll(); render(); }
 
 function endTurn(){
   if(G.over) return;
+  G.collectsThisTurn=0;
   for(const n of G.nations){ n.hitThisCycle=0; n.opsThisTurn={}; }
   for(const n of G.nations) if(n.alive) econTick(n);
   // vassal tribute: 10% of vassal gold flows to the master each turn
@@ -510,9 +514,14 @@ const H = {
   /* ---- economy ---- */
   collect:()=>{
     if(!spend(1)) return;
+    const RATES=[0.8,0.5,0.25,0.12];
+    const ct=G.collectsThisTurn||0;
+    const rate=RATES[Math.min(ct,RATES.length-1)];
     const inc=incomes(P()), r=P().res;
-    r.gold+=inc.gold*0.5; r.oil+=inc.oil*0.5; r.food+=inc.food*0.5; r.industry+=inc.ind*0.5;
-    log('eco',`💰 Collected taxes: +${fmt(inc.gold*0.5)} gold, +${fmt(inc.oil*0.5)} oil, +${fmt(inc.food*0.5)} food.`);
+    r.gold+=inc.gold*rate; r.oil+=inc.oil*rate; r.food+=inc.food*rate; r.industry+=inc.ind*rate;
+    G.collectsThisTurn=(ct+1);
+    const pct=Math.round(rate*100);
+    log('eco',`💰 Collected taxes (${pct}% rate): +${fmt(inc.gold*rate)} gold, +${fmt(inc.oil*rate)} oil, +${fmt(inc.food*rate)} food.${ct>=1?' ⚠ Diminishing returns — each collect this turn yields less.':''}`);
     afterAction();
   },
   explore:()=>{

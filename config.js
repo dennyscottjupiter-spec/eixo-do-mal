@@ -25,22 +25,22 @@ const CONFIG = {
     tank:     { n:'Tank',         i:'🚙', g:150, f:20, batch:5,  atk:4, def:5,   fu:1,   ou:1 },
     jet:      { n:'Jet Fighter',  i:'✈️', g:300, f:10, batch:2,  atk:6, def:5,   fu:1,   ou:2 },
     spy:      { n:'Spy',          i:'🕵️', g:100, f:5,  batch:5,  atk:0, def:0,   fu:0.5, ou:0 },
-    turret:   { n:'Turret',       i:'🗼', g:80,  f:0,  batch:5,  atk:0, def:4,   fu:0,   ou:0 },
+    turret:   { n:'Turret',       i:'🗼', g:50,  f:0,  batch:5,  atk:0, def:4,   fu:0,   ou:0 },
     scud:     { n:'SCUD Missile', i:'🚀', g:500, f:0,  batch:1,  atk:0, def:0,   fu:0,   ou:0 }
   },
   factions: {
-    iran:        { n:'Iran',        flag:'🇮🇷', bonus:'Oil income +15%',   tip:'Extra oil income keeps tanks and jets always fuelled — great for sustained armored offensives.', oil:1.15 },
-    iraq:        { n:'Iraq',        flag:'🇮🇶', bonus:'Attack power +10%', tip:'Born fighters — your ground forces punch above their weight for the same training cost.', atk:1.10 },
-    northkorea:  { n:'North Korea', flag:'🇰🇵', bonus:'Spy cost −20%',     tip:'Espionage specialists — run spy networks 20% cheaper than anyone else. Own the shadows.', spyCost:0.8 },
-    cuba:        { n:'Cuba',        flag:'🇨🇺', bonus:'Pop. growth +10%',  tip:'High birth rate grows your passive gold income every turn. Slow start, dominant late game.', pop:1.10 },
-    libya:       { n:'Libya',       flag:'🇱🇾', bonus:'Gold income +15%',  tip:'Oil wealth fills your treasury faster — build, research, and arm before rivals catch up.', gold:1.15 },
-    syria:       { n:'Syria',       flag:'🇸🇾', bonus:'Defense +15%',      tip:'Hardened fortifications — the toughest nation to invade. Hold the line and counterattack.', def:1.15 },
-    brazil:      { n:'Brazil',      flag:'🇧🇷', bonus:'Pop. growth +15%',  tip:'Fastest population growth in the game — your passive gold snowballs harder than anyone.', pop:1.15 },
-    usa:         { n:'USA',         flag:'🇺🇸', bonus:'Attack power +15%', tip:'Best attack multiplier in the game — your army punches far above its weight class.', atk:1.15 },
-    russia:      { n:'Russia',      flag:'🇷🇺', bonus:'Oil income +15%',   tip:'Oil-rich superpower — tanks and jets always fuelled, dominates long wars and late combat.', oil:1.15 },
-    china:       { n:'China',       flag:'🇨🇳', bonus:'Gold income +15%',  tip:'Highest gold income multiplier — builds faster, researches earlier, and arms the largest army.', gold:1.15 },
-    netherlands: { n:'Netherlands', flag:'🇳🇱', bonus:'Defense +15%',      tip:'Fortified nation with the best defense bonus — ideal for a turtle-then-nuke strategy.', def:1.15 },
-    pakistan:    { n:'Pakistan',    flag:'🇵🇰', bonus:'Attack power +10%', tip:'Battle-hardened military with a nuclear doctrine — your ground forces hit 10% harder for the same training cost.', atk:1.10 }
+    iran:        { n:'Iran',        flag:'🇮🇷', bonus:'Oil income +15%',        tip:'Petro-state engine — extra oil keeps tanks and jets fuelled every turn. Never run dry; sustain long offensive campaigns without oil stops.', oil:1.15 },
+    iraq:        { n:'Iraq',        flag:'🇮🇶', bonus:'Attack power +10%',      tip:'Born fighters — ground forces punch above their weight. Same gold, same troops, 10% more damage on every strike.', atk:1.10 },
+    northkorea:  { n:'North Korea', flag:'🇰🇵', bonus:'Spy cost −20%',          tip:'Masters of the shadows — run spy networks 20% cheaper than any rival. Steal gold, blow up buildings, poison populations for less.', spyCost:0.8 },
+    cuba:        { n:'Cuba',        flag:'🇨🇺', bonus:'Pop. growth +10%',       tip:'High birth rate compounds your passive gold income every single turn. Slow start — unstoppable snowball late game. Pair with banks.', pop:1.10 },
+    libya:       { n:'Libya',       flag:'🇱🇾', bonus:'Gold income +15%',       tip:'Oil wealth fills the treasury faster than anyone else. Build more, research earlier, and arm the largest army on the map.', gold:1.15 },
+    syria:       { n:'Syria',       flag:'🇸🇾', bonus:'Defense +15%',           tip:'Hardened fortifications — the toughest nation to invade. Stack bunkers and let rivals break their armies against your walls.', def:1.15 },
+    brazil:      { n:'Brazil',      flag:'🇧🇷', bonus:'Pop. growth +15%',       tip:'Fastest population growth in the game — your passive gold snowballs harder than anyone. Pair with banks for an unstoppable late-game economy.', pop:1.15 },
+    usa:         { n:'USA',         flag:'🇺🇸', bonus:'Attack power +15%',      tip:'Unrivalled military might — the highest raw attack multiplier in the game. Your army punches far above its weight class on every assault.', atk:1.15 },
+    russia:      { n:'Russia',      flag:'🇷🇺', bonus:'Defense +20%',           tip:'Fortress superpower — the single strongest defense bonus in the game. Turn your territory into an impenetrable bastion; force rivals to bleed out attacking you.', def:1.20 },
+    china:       { n:'China',       flag:'🇨🇳', bonus:'Troop training −15%',    tip:'Mass production doctrine — all combat units (infantry, tanks, jets) cost 15% less gold to train. Field the largest army on the map for the same budget.', trainCost:0.85 },
+    netherlands: { n:'Netherlands', flag:'🇳🇱', bonus:'Gold income +10%',       tip:'Trading nation — steady gold bonus fuels a balanced build-research-arm strategy. Less explosive than Libya but more diplomatic flexibility.', gold:1.10 },
+    pakistan:    { n:'Pakistan',    flag:'🇵🇰', bonus:'Troop training −10%',    tip:'Conscription economy — ground forces cost 10% less to train. Build a larger standing army than rivals can match, then project force or deter invasion.', trainCost:0.90 }
   },
   techs: [
     { id:'advAgri',        tier:1, n:'Advanced Agriculture', g:800,  d:'+10% food production' },
@@ -129,7 +129,7 @@ function initGame(playerFaction){
   G = {
     turn:1, actions:CONFIG.actionsPerTurn, nations:[], log:[],
     over:false, result:null, streak:0, coalition:false, started:true,
-    difficulty: UI.difficulty||'medium', imfRate:0.08
+    difficulty: UI.difficulty||'medium', imfRate:0.08, collectsThisTurn:0
   };
   G.nations.push(newNation(playerFaction,true,null));
   others.forEach((f,i)=>G.nations.push(newNation(f,false,persL[i%persL.length])));
