@@ -153,7 +153,7 @@ img.emoji{height:1em;width:1.25em;margin:0 .08em;vertical-align:-0.15em;display:
 @keyframes fadein{from{opacity:0;transform:translateY(-2px)}to{opacity:1}}
 .le .tt{color:#6b5a2a;margin-right:6px}
 .le.eco{color:var(--green)}.le.war{color:var(--red)}.le.spy{color:var(--cyan)}
-.le.diplo{color:var(--vio)}.le.sys{color:var(--grey)}.le.nuke{color:#ffdf6b;font-weight:bold}
+.le.diplo{color:var(--vio)}.le.sys{color:#cdbd86}.le.nuke{color:#ffdf6b;font-weight:bold}
 .le.intel{color:var(--cyan);opacity:.8}
 /* ranking */
 .rrow{display:flex;gap:6px;align-items:baseline;padding:3px 0;border-bottom:1px dashed #2c240e}
@@ -336,6 +336,8 @@ body.theme-vscode .diff-btn.on,body.theme-vscode .tpick.on{
 @media (pointer:coarse){
   .btn,.tab,.fcard,.tpick,.diff-btn{min-height:40px;padding:7px 11px}
 }
+/* hide TV image until game starts — prevents bleed-through on start screen */
+body:not(.ingame) .tv-frame{visibility:hidden}
 @media(prefers-reduced-motion:reduce){
   .cursor::after,.blink{animation:none}
   .le{animation:none}

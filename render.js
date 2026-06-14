@@ -24,7 +24,8 @@ function showBlast(){
 }
 
 function render(){
-  if(!G || !G.started){ renderFactionOverlay(true); if(window.twemoji) twemoji.parse(document.body,{base:'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/',folder:'svg',ext:'.svg'}); return; }
+  if(!G || !G.started){ document.body.classList.remove('ingame'); renderFactionOverlay(true); if(window.twemoji) twemoji.parse(document.body,{base:'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/',folder:'svg',ext:'.svg'}); return; }
+  document.body.classList.add('ingame');
   renderFactionOverlay(false);
   renderDefcon(); renderHud(); renderDetail(); renderCmd(); renderTabs(); renderTabContent();
   renderLog(); renderRank(); renderOver();
