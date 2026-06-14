@@ -55,7 +55,7 @@ function renderHelp(){
 <div class="muted">
 • <b>Gold</b> = pop × 0.5/turn + banks × 60/turn × factory multiplier.<br>
 • <b>Factory industry</b> multiplies ALL building output up to 2× — build factories early and stack them.<br>
-• <b>COLLECT</b> (Space) grabs half a turn's income instantly. Use it any turn you're tight on gold.<br>
+• <b>COLLECT</b> (Space) grabs part of your turn's income instantly (first use: 80%, second: 50%, third: 25%). Diminishing returns reset each turn — use it when tight on gold but don't spam it.<br>
 • <b>Famine</b> (food &lt; 0) kills 5% of your population and collapses morale every turn — build Farms first.<br>
 • <b>IMF loans</b> (MARKET tab) give instant gold but accrue compound interest every turn. Rates drift 4-16%. Debt lowers your net-worth score — repay before it snowballs.<br>
 • EXPLORE claims new land (you need free acres to build). Yield falls as your nation grows.
@@ -124,7 +124,7 @@ ${phase('PHASE 1 · TURNS 1–3 — Survive &amp; claim land','Don\'t starve. Ge
   ['🌾 BUILD a Farm (turn 1)','Food feeds your army and population every single turn. No farm = famine = pop drop + morale collapse. Always first.'],
   ['🗺️ EXPLORE × 1–2','Each building needs 1 free acre. You start with 25 land and 12 buildings — only 13 free. Explore early or you hit a wall.'],
   ['🛢️ BUILD an Oil Field','Tanks and jets need oil or fight at 50% power. One field early means your army is always battle-ready.'],
-  ['💰 COLLECT (Space) when low','Half a turn\'s income instantly, costs 1 action. Use it any turn you\'re tight on gold — it\'s never wasted.'],
+  ['💰 COLLECT (Space) when low','Grabs part of your income now (80% first use, 50% second, 25% third — resets each turn). Use it when tight on gold, but don\'t spam it: diminishing returns kick in fast.'],
 ])}
 ${phase('PHASE 2 · TURNS 4–7 — Build an economy &amp; a deterrent','Rivals start getting aggressive around turn 6.',[
   ['💰 BUILD a Bank','Your biggest income booster. Gold pays for everything — one Bank outperforms almost any other build mid-game.'],
@@ -347,7 +347,7 @@ document.addEventListener('keydown',e=>{
   } else if(e.key>='1'&&e.key<='7'){
     const tabList=['build','train','market','attack','spy','tech','diplo'];
     const idx=parseInt(e.key,10)-1;
-    if(idx<tabList.length){ UI.tab=tabList[idx]; render(); }
+    if(idx<tabList.length) H.tab(tabList[idx]);
   }
 });
 

@@ -74,21 +74,21 @@ function renderHud(){
 function renderDetail(){
   const n=P();
   let h='';
-  h+=`<div class="sec">ARMED FORCES</div>`;
-  h+=`<div class="kv"><span>${CONFIG.units.infantry.i} Infantry</span><span>${fmt(n.army.infantry)}</span></div>`;
-  h+=`<div class="kv"><span>${CONFIG.units.tank.i} Tanks</span><span>${fmt(n.army.tank)}</span></div>`;
-  h+=`<div class="kv"><span>${CONFIG.units.jet.i} Jet Fighters</span><span>${fmt(n.army.jet)}</span></div>`;
-  h+=`<div class="kv"><span>${CONFIG.units.turret.i} Turrets <span class="dim">(def)</span></span><span>${fmt(n.army.turret)}</span></div>`;
-  h+=`<div class="kv"><span>${CONFIG.units.spy.i} Spies</span><span>${fmt(n.army.spy)}</span></div>`;
-  h+=`<div class="kv"><span>${CONFIG.units.scud.i} SCUD Missiles</span><span>${fmt(n.army.scud)}</span></div>`;
-  h+=`<div class="kv"><span>☢️ Warheads</span><span>${fmt(n.army.warhead)}</span></div>`;
-  h+=`<div class="kv dim"><span>Capacity</span><span>${fmt(troopCnt(n))}/${fmt(troopCap(n))}</span></div>`;
-  h+=`<div class="kv dim"><span>Atk / Def</span><span>${fmt(atkPower(n,n.army))} / ${fmt(defPower(n))}</span></div>`;
-  h+=`<div class="sec">STRUCTURES</div>`;
-  for(const k in n.b) h+=`<div class="kv"><span>${CONFIG.buildings[k].i} ${CONFIG.buildings[k].n}</span><span>${n.b[k]}</span></div>`;
-  h+=`<div class="kv dim" style="margin-top:4px"><span>Industry ×</span><span>${industryMult(n).toFixed(2)}</span></div>`;
+  h+=`<div id="sec-forces" class="sec" title="Your live military inventory. Infantry/tanks/jets are combat troops — they attack and defend. Turrets are static defense towers (cannot attack, never lost in combat). Spies run covert ops. SCUDs are one-use missiles that destroy enemy buildings from any range. Warheads are nuclear weapons. Capacity = current troops / max allowed by your barracks.">ARMED FORCES</div>`;
+  h+=`<div class="kv" title="Cheap front-line soldiers. Attack power 1, defense 1.2. No oil upkeep — always fight at full strength."><span>${CONFIG.units.infantry.i} Infantry</span><span>${fmt(n.army.infantry)}</span></div>`;
+  h+=`<div class="kv" title="Heavy armor. Attack power 4× infantry. Needs oil or fights at 50% strength. Check your oil delta in the HUD — keep it positive."><span>${CONFIG.units.tank.i} Tanks</span><span>${fmt(n.army.tank)}</span></div>`;
+  h+=`<div class="kv" title="Deadliest offensive unit — attack power 6× infantry. Also intercepts incoming SCUD missiles. Oil-hungry: oil shortage halves their power."><span>${CONFIG.units.jet.i} Jet Fighters</span><span>${fmt(n.army.jet)}</span></div>`;
+  h+=`<div class="kv" title="Static defense tower — adds 4 defense power each. Cannot attack, never lost in combat, no oil or food upkeep. Stack them to make your territory a fortress."><span>${CONFIG.units.turret.i} Turrets <span class="dim">(def)</span></span><span>${fmt(n.army.turret)}</span></div>`;
+  h+=`<div class="kv" title="Your spy network. More spies = higher success rate on covert ops (steal gold, sabotage buildings, poison population, gather intel). Success rate = your spies ÷ (their spies × 1.5)."><span>${CONFIG.units.spy.i} Spies</span><span>${fmt(n.army.spy)}</span></div>`;
+  h+=`<div class="kv" title="One-use ballistic missiles. Each launch destroys 2-3 enemy buildings from any range — their jets may intercept it. The more jets the enemy has, the lower your hit chance."><span>${CONFIG.units.scud.i} SCUD Missiles</span><span>${fmt(n.army.scud)}</span></div>`;
+  h+=`<div class="kv" title="Nuclear warhead. Assembled after completing the Manhattan-Do-Mal Project path. Deploy via ATTACK tab while ranked #1 to win the game instantly."><span>☢️ Warheads</span><span>${fmt(n.army.warhead)}</span></div>`;
+  h+=`<div class="kv dim" title="Current / maximum troop count. Barracks raise the cap by 100 each. When full you cannot train more infantry, tanks, or jets — build more Barracks first."><span>Capacity</span><span>${fmt(troopCnt(n))}/${fmt(troopCap(n))}</span></div>`;
+  h+=`<div class="kv dim" title="Your attack power (infantry + tanks×4 + jets×6, scaled by morale/oil/tech) vs your defense power (same units + turrets×4 + bunker bonus, scaled by faction). Higher attack wins assaults; higher defense repels them."><span>Atk / Def</span><span>${fmt(atkPower(n,n.army))} / ${fmt(defPower(n))}</span></div>`;
+  h+=`<div id="sec-structures" class="sec" title="Your built infrastructure. Each building costs 1 acre of land and produces resources every turn. The Industry × multiplier (from factories) scales ALL building output up to 2×. More factories = every bank, farm, and oil field earns double.">STRUCTURES</div>`;
+  for(const k in n.b) h+=`<div class="kv" title="${CONFIG.buildings[k].n}: ${CONFIG.buildings[k].d}. You have ${n.b[k]}."><span>${CONFIG.buildings[k].i} ${CONFIG.buildings[k].n}</span><span>${n.b[k]}</span></div>`;
+  h+=`<div class="kv dim" title="Industry multiplier: all building income (gold, oil, food) is multiplied by this factor each turn. Starts at 1.0× with no factories; caps at 2.0× with 300+ industry. Build factories early — they compound everything." style="margin-top:4px"><span>Industry ×</span><span>${industryMult(n).toFixed(2)}</span></div>`;
   if(hasTech(n,'nuclearPhysics')){
-    h+=`<div class="sec">☢ NUCLEAR</div>`;
+    h+=`<div class="sec" title="Your warhead development progress. Passive research: +1 per turn with an active Nuclear Facility. Manual advance: TECH tab → ADVANCE +2 (costs 1 action). Reach ${CONFIG.warhead.researchNeeded}/${CONFIG.warhead.researchNeeded} to unlock the ASSEMBLE button.">☢ NUCLEAR</div>`;
     h+=`<div class="dim">[${asciiBar(n.nukeProg,CONFIG.warhead.researchNeeded,12)}] ${n.nukeProg}/${CONFIG.warhead.researchNeeded}</div>`;
   }
   $('detail').innerHTML=h;
@@ -217,7 +217,16 @@ function renderTabContent(){
       let st;
       if(done) st=`<span class="g">[RESEARCHED]</span>`;
       else if(av.includes(t)) st=`<button class="btn" data-a="tech" data-p="${t.id}" title="Research ${t.n}: ${t.d}. Costs ${fmt(t.g)} gold and 1 action." ${(!can||G.actions<1)?'disabled':''}>RESEARCH ${fmt(t.g)}💰</button>`;
-      else st=`<span class="muted">[LOCKED — research the previous tier first]</span>`;
+      else {
+        const prevTierTechs=CONFIG.techs.filter(x=>x.tier===t.tier-1).map(x=>x.n);
+        const needsTier=t.tier>1&&!me.techs.some(id=>techOf(id).tier===t.tier-1);
+        const needsReq=t.req&&!hasTech(me,t.req);
+        const lockParts=[];
+        if(needsTier) lockParts.push(`research any Tier ${t.tier-1} tech first (${prevTierTechs.join(' or ')})`);
+        if(needsReq) lockParts.push(`also need ${techOf(t.req).n}`);
+        if(me.b.lab<1) lockParts.push('build a Research Lab first');
+        st=`<span class="r">[LOCKED — ${lockParts.join(' · ')}]</span>`;
+      }
       const treqName=t.req?techOf(t.req).n:'';
       const techLtip=done?`${t.n} — already researched. Effect: ${t.d}.`
         :av.includes(t)?`Tier ${t.tier} upgrade: ${t.d}. Techs unlock in tier order — research lower tiers first.${treqName?' Also requires: '+treqName+'.':''}`
@@ -271,15 +280,15 @@ function renderRank(){
        `<span class="sc">$${fmt(score(n))}</span></div>`;
   });
   dead.forEach(n=>{ h+=`<div class="rrow dead"><span class="pos">☠</span><span class="nn">${nm(n)}</span><span class="sc">FALLEN</span></div>`; });
-  h+=`<div class="sec">NETWORTH ($)</div><div class="muted" style="font-size:12px">gold + pop×2 + army×3<br>+ land×40 + buildings×500 + techs×1000</div>`;
+  h+=`<div class="sec" title="How the ranking score is calculated: gold + population×2 + raw army power×3 + land acres×40 + buildings×500 + researched techs×1000 − IMF debt. Think of it as your nation's total real-world strength — wealth, people, army, territory, infrastructure, and knowledge, all in one number.">NETWORTH ($)</div><div class="muted" style="font-size:12px">Your overall power: wealth · people · army · land · buildings · techs − debt.<br><span class="dim" style="font-size:11px">(hover for exact formula)</span></div>`;
   if(G.coalition) h+=`<div class="r" style="margin-top:8px">⚠ COALITION AGAINST YOU ACTIVE</div>`;
-  h+=`<div class="sec">⚔️ MILITARY POWER</div>`;
+  h+=`<div class="sec" title="Ranks all nations by raw attack power — infantry×1 + tanks×4 + jets×6, boosted by morale, tech bonuses, and faction attack bonus. This is different from NETWORTH: a rich nation with no army can rank #1 in networth but #6 here. Watch this to know who can actually hurt you and who is safe to attack.">⚔️ MILITARY POWER</div>`;
   const byMil=G.nations.filter(n=>n.alive).slice().sort((a,b)=>rawPower(b)-rawPower(a));
   byMil.forEach((n,i)=>{
     h+=`<div class="rrow${n.isPlayer?' me':''}"><span class="pos">#${i+1}</span>`+
        `<span class="nn">${fb(n).flag} ${nm(n)}${n.isPlayer?' (YOU)':''}</span>`+
        `<span class="sc">${fmt(atkPower(n,n.army))}</span></div>`;
   });
-  h+=`<div class="muted" style="font-size:11px;margin-top:2px">raw attack power score</div>`;
+  h+=`<div class="muted" style="font-size:11px;margin-top:2px">attack power score (infantry + tanks×4 + jets×6 × morale × tech)</div>`;
   $('rank').innerHTML=h;
 }

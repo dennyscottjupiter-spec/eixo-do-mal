@@ -468,7 +468,11 @@ const FLAVOR={
 
 const H = {
   /* ---- meta ---- */
-  tab:(p)=>{ UI.tab=p; UI.attackTarget=null; render(); },
+  tab:(p)=>{
+    UI.tab=p; UI.attackTarget=null; render();
+    const secMap={attack:'sec-forces',train:'sec-forces',spy:'sec-forces',build:'sec-structures'};
+    if(secMap[p]){ const el=document.getElementById(secMap[p]); if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+  },
   newGame:()=>{ G=null; UI.tab='build'; UI.attackTarget=null; render(); },
   setDifficulty:(p)=>{ UI.difficulty=p; render(); },
   pickFaction:(p)=>initGame(p),

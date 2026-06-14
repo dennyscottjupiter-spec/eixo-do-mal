@@ -37,7 +37,8 @@ The four JS files map 1-to-1 to the 8 layer comments inside them. Read layers to
 
 **Difficulty system:** `CONFIG.difficulty` has four entries (`easy`, `medium`, `hard`, `extreme`). Each entry has: `label`, `aiStart` (multiplier on rival starting gold+army — *player untouched*), `playerBonus` (head-start on easy only), `coalition` (streak threshold or `false`), `atkGrace` (turns before AI attacks), `aiAtk` (attack probability), `aiBudget` (decision count), `blurb`. In engine.js, `DCfg()` returns the current difficulty config; `G.difficulty` stores it. `UI.difficulty` is set on the start screen and written to `G.difficulty` in `initGame`.
 
-**Faction pool is 12** (iran, iraq, northkorea, cuba, libya, syria, brazil, usa, russia, china, netherlands, pakistan) but each game seats exactly **6** (player + 5 random rivals via `others.slice(0,5)`). Every faction entry has: `flag`, `bonus`, `tip` (one-liner shown on the start screen), and one wired bonus key (`gold`, `oil`, `pop`, `atk`, `def`, or `spyCost`). Only these 6 keys are wired in engine calculations — new factions must use only them.
+**Faction pool is 12** (iran, iraq, northkorea, cuba, libya, syria, brazil, usa, russia, china, netherlands, pakistan) but each game seats exactly **6** (player + 5 random rivals via `others.slice(0,5)`). Every faction entry has: `flag`, `bonus`, `tip` (one-liner shown on the start screen), and one wired bonus key (`gold`, `oil`, `pop`, `atk`, `def`, `spyCost`, or `trainCost`). Only these 7 keys are wired in engine calculations — new factions must use only them.
+- `trainCost` (multiplier <1 = cheaper): applied in `unitGoldCost()` (engine.js) to infantry/tank/jet batch cost. Example: China `trainCost:0.85` → 15% off all combat-unit training.
 
 **IMF state:** `G.imfRate` (starts 0.08, drifts 0.04–0.16 each turn); `n.debt` on each nation (only player debt is ever non-zero). `score()` subtracts `n.debt` so borrowed gold can't fake a win.
 
@@ -95,7 +96,7 @@ Three themes, all using CSS design tokens on `body.theme-X`:
 
 - **State → render, never DOM-first.** Mutate `G` then call `render()`. Never hand-patch DOM nodes.
 - **New player action = 3 edits:** add a handler to `H` (engine.js), emit a button with `data-a="yourKey"` in the appropriate render function, gate with `spend(n)` if it costs an action. Exception: view-state-only handlers like `H.setDifficulty` and `H.setTheme` just update `UI.*` / call `applyTheme()` and `render()` — no `spend()`.
-- **New building/unit/tech/faction = a CONFIG entry** (config.js); render loops iterate `CONFIG` generically. New factions also need a `tip:` field and must use only the 6 wired bonus keys.
+- **New building/unit/tech/faction = a CONFIG entry** (config.js); render loops iterate `CONFIG` generically. New factions also need a `tip:` field and must use only the 7 wired bonus keys.
 - **Player is always `G.nations[0]`** (`P()`). Accessors: `nm()`, `fb()`, `byId()`, `rel()`.
 - **Win/lose flows through `checkDestroyed` → `checkAll`.** Never set `G.over` directly.
 - **Overlays:** `menuOverlay`, `helpOverlay`, `keysOverlay`, `firstMovesOverlay`, `blastOverlay`, `overOverlay`, `statsOverlay`. Every new overlay must be registered in `closeOverlay`, `loadGame`, Esc key handler, `renderOver()` hide list, and any button that opens it.
