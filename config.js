@@ -52,6 +52,7 @@ const CONFIG = {
     { id:'icbm',           tier:4, n:'ICBM Program',         g:8000, d:'warhead becomes deployable', req:'nuclearPhysics' }
   ],
   warhead: { researchNeeded:50, g:5000, oil:100 },
+  diploCost: { ally:300, peace:200 },   // gold cost to send an envoy/bribe
   maxOpsPerTarget: 3,   // max hostile ops (spy + ground assault) against one nation per turn
   // AI personality weight profiles. ratio = attack when myPower >= ratio × targetDefense.
   profiles: {

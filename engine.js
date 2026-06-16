@@ -369,7 +369,13 @@ function aiDiplomacy(n){
   // anti-player coalition: kicks in if you've been #1 for 5+ straight turns
   if(G.coalition && rel(n,P())!=='war' && rel(n,P())!=='vassal' && chance(0.30)){
     setWar(n,P());
-    log('diplo',`${nm(n)} has joined the coalition against you!`);
+    log('diplo',`⚠️ ${nm(n)} has joined the coalition against you!`);
+    return;
+  }
+  // coalition betrayal: allied AI may tear up their pact under pressure
+  if(G.coalition && rel(n,P())==='alliance' && chance(0.20)){
+    setRel(n,P(),'peace');
+    log('diplo',`💔 BETRAYAL — ${nm(n)} has torn up their alliance with you, bowing to coalition pressure. They are now neutral.`);
     return;
   }
   // occasional AI–AI alliances
@@ -470,8 +476,15 @@ const H = {
   /* ---- meta ---- */
   tab:(p)=>{
     UI.tab=p; UI.attackTarget=null; render();
-    const secMap={attack:'sec-forces',train:'sec-forces',spy:'sec-forces',build:'sec-structures'};
-    if(secMap[p]){ const el=document.getElementById(secMap[p]); if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+    const secMap={attack:'sec-forces',train:'sec-forces',spy:'sec-forces',build:'sec-structures',diplo:'rank'};
+    if(secMap[p]){
+      const el=document.getElementById(secMap[p]);
+      if(el){
+        el.scrollIntoView({block: p==='build'?'start':'nearest', behavior:'smooth'});
+        el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+        setTimeout(()=>el.classList.remove('flash'),700);
+      }
+    }
   },
   newGame:()=>{ G=null; UI.tab='build'; UI.attackTarget=null; render(); },
   setDifficulty:(p)=>{ UI.difficulty=p; render(); },
@@ -518,7 +531,7 @@ const H = {
   /* ---- economy ---- */
   collect:()=>{
     if(!spend(1)) return;
-    const RATES=[0.8,0.5,0.25,0.12];
+    const RATES=[1.0,0.75,0.5,0.25,0.1];
     const ct=G.collectsThisTurn||0;
     const rate=RATES[Math.min(ct,RATES.length-1)];
     const inc=incomes(P()), r=P().res;
@@ -640,6 +653,13 @@ const H = {
   diplo:(p,q)=>{
     const t=byId(p), me=P();
     if(!t||!t.alive) return;
+    // gold envoy cost for alliance/peace proposals
+    if((q==='ally'||q==='peace')){
+      const cost=CONFIG.diploCost[q==='ally'?'ally':'peace'];
+      if(me.res.gold<cost){ log('diplo',`🤝 Not enough gold to send an envoy — need ${fmt(cost)} gold.`); render(); return; }
+      me.res.gold-=cost;
+      log('diplo',`🤝 Spent ${fmt(cost)} gold dispatching envoys to ${nm(t)}.`);
+    }
     if(!spend(1)) return;
     if(q==='ally'){
       const base=CONFIG.profiles[t.personality].acceptAlly;

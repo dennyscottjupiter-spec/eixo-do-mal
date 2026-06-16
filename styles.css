@@ -137,6 +137,16 @@ img.emoji{height:1em;width:1.25em;margin:0 .08em;vertical-align:-0.15em;display:
 }
 .tab:hover{color:var(--amber)}
 .tab.on{background:var(--amber);color:#0d0d0d;text-shadow:none}
+.tab.on .kbd{color:#0d0d0d;border-color:#0d0d0d;background:rgba(0,0,0,.15)}
+/* keycap badge — small bordered box showing keyboard shortcut */
+.kbd{
+  display:inline-block;font-size:10px;line-height:1;
+  border:1px solid currentColor;padding:0 3px;border-radius:2px;
+  opacity:.7;margin-right:3px;vertical-align:middle;
+}
+/* section flash — amber pulse when contextual scroll lands */
+@keyframes secflash{0%,100%{color:var(--amber-hi)}50%{color:var(--amber);background:rgba(240,192,64,.12)}}
+.sec.flash{animation:secflash .6s ease 2}
 .row{
   display:flex;justify-content:space-between;align-items:center;
   gap:8px;padding:4px 0;border-bottom:1px dashed #2c240e;flex-wrap:wrap;
@@ -151,7 +161,7 @@ img.emoji{height:1em;width:1.25em;margin:0 .08em;vertical-align:-0.15em;display:
 /* log entries */
 .le{padding:1px 0;animation:fadein .25s ease}
 @keyframes fadein{from{opacity:0;transform:translateY(-2px)}to{opacity:1}}
-.le .tt{color:#6b5a2a;margin-right:6px}
+.le .tt{color:#b89640;margin-right:6px}
 .le.eco{color:var(--green)}.le.war{color:var(--red)}.le.spy{color:var(--cyan)}
 .le.diplo{color:var(--vio)}.le.sys{color:#cdbd86}.le.nuke{color:#ffdf6b;font-weight:bold}
 .le.intel{color:var(--cyan);opacity:.8}

@@ -95,11 +95,14 @@ function renderDetail(){
 }
 
 function renderCmd(){
+  const ct=G.collectsThisTurn||0;
+  const RATES=[1.0,0.75,0.5,0.25,0.1];
+  const rate=Math.round(RATES[Math.min(ct,RATES.length-1)]*100);
   $('cmdbar').innerHTML=
     `<span>ACTIONS <span class="bar">[${asciiBar(G.actions,CONFIG.actionsPerTurn,10)}]</span> <b>${G.actions}/${CONFIG.actionsPerTurn}</b></span>`+
-    `<button class="btn gr" data-a="collect" title="Collect half your turn's income right now — gold, oil, food. Costs 1 action. Shortcut: Space." ${G.actions<1?'disabled':''}>💰 COLLECT ▸1</button>`+
-    `<button class="btn cy" data-a="explore" title="Send scouts to claim new land. You need free acres to build. Costs 1 action. Shortcut: X." ${G.actions<1?'disabled':''}>🗺️ EXPLORE ▸1</button>`+
-    `<button class="btn warn" data-a="endTurn" title="End your turn. All rivals act, then you get 10 fresh actions. Shortcut: Enter.">⏎ END TURN</button>`;
+    `<button class="btn gr" data-a="collect" title="Collect a portion of your turn's income right now — gold, oil, food. Rate: 100%→75%→50%→25% each use this turn. Costs 1 action. Shortcut: Space." ${G.actions<1?'disabled':''}><span class="kbd">␣</span>💰 COLLECT ▸1 <span class="dim">(${rate}%)</span></button>`+
+    `<button class="btn cy" data-a="explore" title="Send scouts to claim new land. You need free acres to build. Costs 1 action. Shortcut: X." ${G.actions<1?'disabled':''}><span class="kbd">X</span>🗺️ EXPLORE ▸1</button>`+
+    `<button class="btn warn" data-a="endTurn" title="End your turn. All rivals act, then you get 10 fresh actions. Shortcut: Enter."><span class="kbd">⏎</span> END TURN</button>`;
 }
 
 function renderTabs(){
@@ -110,8 +113,8 @@ function renderTabs(){
               ['spy','🕶️ SPY','Send agents to steal gold, sabotage buildings, or gather intel'],
               ['tech','🔬 TECH','Research technologies that boost production, combat, or unlock nukes'],
               ['diplo','🤝 DIPLO','Propose alliances, declare war, or vassalize weaker nations']];
-  $('tabs').innerHTML=tabs.map(([k,l,tip])=>
-    `<button class="tab${UI.tab===k?' on':''}" data-a="tab" data-p="${k}" title="${tip}">${l}</button>`).join('');
+  $('tabs').innerHTML=tabs.map(([k,l,tip],i)=>
+    `<button class="tab${UI.tab===k?' on':''}" data-a="tab" data-p="${k}" title="${tip} (shortcut: key ${i+1})"><span class="kbd">${i+1}</span>${l}</button>`).join('');
 }
 
 function intelStr(t){
@@ -247,11 +250,12 @@ function renderTabContent(){
     for(const x of targetsOf()){
       const r=rel(me,x);
       let btns='';
-      if(r==='peace') btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="ally" title="Propose an alliance — they may accept or refuse. Allies count toward your Domination victory." ${G.actions<1?'disabled':''}>PROPOSE ALLIANCE</button>`+
+      const aC=CONFIG.diploCost.ally, pC=CONFIG.diploCost.peace;
+      if(r==='peace') btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="ally" title="Propose an alliance — costs ${fmt(aC)} gold for envoys. They may accept or refuse. Allies count toward your Domination victory." ${(G.actions<1||me.res.gold<aC)?'disabled':''}>PROPOSE ALLIANCE <span class="dim">${fmt(aC)}💰</span></button>`+
                            `<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="war" title="Formally declare war on ${nm(x)}. This allows you to attack them." ${G.actions<1?'disabled':''}>DECLARE WAR</button>`;
       else if(r==='war'){
         const canV=score(x)<score(me)*0.25;
-        btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="peace" title="Offer a peace treaty. ${nm(x)} is more likely to accept if they are losing." ${G.actions<1?'disabled':''}>OFFER PEACE</button>`+
+        btns=`<button class="btn" data-a="diplo" data-p="${x.id}" data-q="peace" title="Offer a peace treaty — costs ${fmt(pC)} gold for envoys. ${nm(x)} is more likely to accept if they are losing." ${(G.actions<1||me.res.gold<pC)?'disabled':''}>OFFER PEACE <span class="dim">${fmt(pC)}💰</span></button>`+
              `<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="vassal" title="${canV?`Demand ${nm(x)} surrender as your vassal — they will pay 10% tribute each turn`:'Enemy must be below 25% of your score to vassalize'}. Enemy becomes your vassal." ${(!canV||G.actions<1)?'disabled':''}>VASSALIZE</button>`;
       }
       else if(r==='alliance') btns=`<button class="btn warn" data-a="diplo" data-p="${x.id}" data-q="break" title="End the alliance with ${nm(x)}. Relations return to peace." ${G.actions<1?'disabled':''}>BREAK PACT</button>`;
