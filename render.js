@@ -23,6 +23,49 @@ function showBlast(){
   }, 2200);
 }
 
+/* Full-screen World News broadcast reel — plays highlighted turn events one by one */
+function playBroadcast(lines, done){
+  const el=$('broadcastOverlay');
+  if(!el){ done(); return; }
+  const timers=[];
+  const DELAY=2200;
+
+  function dismiss(){
+    timers.forEach(t=>clearTimeout(t));
+    el.classList.add('hidden');
+    el.innerHTML='';
+    done();
+  }
+
+  el.innerHTML=`<div class="bc-box">
+<div class="bc-header">TURN ${G.turn} · WORLD NEWS</div>
+<div class="bc-body" id="bc-body"></div>
+<div class="bc-dots" id="bc-dots">${lines.map((_,i)=>`<span class="bc-dot" id="bc-dot-${i}"></span>`).join('')}</div>
+<button class="bc-skip" id="bc-skip">SKIP ▸</button>
+</div>`;
+  el.classList.remove('hidden');
+
+  const body=$('bc-body');
+  $('bc-skip').addEventListener('click', dismiss);
+
+  lines.forEach((e,i)=>{
+    timers.push(setTimeout(()=>{
+      const div=document.createElement('div');
+      div.className=`bc-line ${e.type}`;
+      div.innerHTML=e.text;
+      body.appendChild(div);
+      // update progress dots
+      const prev=$(`bc-dot-${i-1}`);
+      if(prev){ prev.classList.remove('active'); prev.classList.add('done'); }
+      const cur=$(`bc-dot-${i}`);
+      if(cur) cur.classList.add('active');
+      if(i===lines.length-1){
+        timers.push(setTimeout(()=>{ cur&&cur.classList.replace('active','done'); dismiss(); }, DELAY));
+      }
+    }, i*DELAY));
+  });
+}
+
 function render(){
   if(!G || !G.started){ document.body.classList.remove('ingame'); renderFactionOverlay(true); if(window.twemoji) twemoji.parse(document.body,{base:'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/',folder:'svg',ext:'.svg'}); return; }
   document.body.classList.add('ingame');

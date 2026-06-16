@@ -112,7 +112,7 @@ function asciiBar(v,max,len){
 
 /* ---------- game state ---------- */
 let G = null;                                   // single source of truth
-const UI = { tab:'build', attackTarget:null, difficulty:'medium' };  // view-only state
+const UI = { tab:'build', attackTarget:null, difficulty:'medium', broadcast:true };  // view-only state
 
 function newNation(faction,isPlayer,personality){
   return {

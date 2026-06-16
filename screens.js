@@ -17,6 +17,7 @@ function renderMenu(){
   <button class="btn" data-a="helpFromMenu" title="Read the full how-to-play guide — combat, economy, espionage, diplomacy.">❔ HOW TO PLAY</button>
   <button class="btn cy" data-a="firstMovesFromMenu" title="See the phased 10-turn opening guide.">📋 FIRST MOVES</button>
   <button class="btn cy" data-a="statsFromMenu" title="See live standings and statistics for all nations — same view as end-of-game." ${(!G||!G.started||G.over)?'disabled':''}>📊 STATISTICS</button>
+  <button class="btn cy" data-a="setBroadcast" data-p="${UI.broadcast!==false?'off':'on'}" title="Toggle the World News broadcast reel that plays after each turn.">${UI.broadcast!==false?'📺 BROADCAST: ON (click to turn off)':'⚡ BROADCAST: OFF (click to turn on)'}</button>
   <button class="btn" data-a="restartGame" title="Abandon this game and start fresh — you will pick a new faction.">🔄 RESTART (new game)</button>
   <button class="btn warn" data-a="resignGame" title="Give up and end the game in defeat." ${(!G||!G.started||G.over)?'disabled':''}>🏳️ RESIGN (forfeit)</button>
   <button class="btn" data-a="closeOverlay" title="Close this menu and return to the game." style="margin-top:6px">✖ CLOSE</button>
@@ -175,6 +176,10 @@ function renderFactionOverlay(show){
     ['vscode','💚 NEON','VSCode-inspired dark theme — cool neon syntax-color palette.'],
   ].map(([k,l,tip])=>
     `<button class="tpick blink${curTheme===k?' on':''}" data-a="setTheme" data-p="${k}" title="${tip}">${l}</button>`).join('');
+  const bcOn=UI.broadcast!==false;
+  const broadcastBtns=
+    `<button class="tpick${bcOn?' on':''}" data-a="setBroadcast" data-p="on" title="Show a full-screen highlight reel of rival actions at the end of each turn — attacks, nukes, betrayals, alliances.">📺 BROADCAST ON</button>`+
+    `<button class="tpick${!bcOn?' on':''}" data-a="setBroadcast" data-p="off" title="Skip the broadcast; rival events go straight to the Event Log.">⚡ INSTANT</button>`;
 
   let cards='';
   for(const k in CONFIG.factions){
@@ -200,6 +205,12 @@ function renderFactionOverlay(show){
   <div class="boot-row">${themeBtns}</div>
 </div>
 
+<div class="boot-section">
+  <div class="boot-label">// WORLD NEWS</div>
+  <div class="boot-row">${broadcastBtns}</div>
+  <div class="boot-blurb">${bcOn?'Full-screen highlight reel plays after each turn — one dramatic event at a time.':'Instant mode — rival events appear directly in the Event Log.'}</div>
+</div>
+
 <div class="insert-prompt blink" title="Select a nation below to begin">▶ &nbsp; I N S E R T &nbsp; N A T I O N &nbsp; ◀</div>
 
 <div style="margin:4px 0 4px;display:flex;gap:8px;flex-wrap:wrap">
@@ -219,6 +230,7 @@ function renderOver(){
   $('keysOverlay').classList.add('hidden');
   $('firstMovesOverlay').classList.add('hidden');
   $('statsOverlay').classList.add('hidden');
+  $('broadcastOverlay').classList.add('hidden');
   o.classList.remove('hidden');
   const R=G.result;
   const sorted=G.nations.slice().sort((a,b)=>score(b)-score(a));
@@ -327,7 +339,7 @@ document.addEventListener('keydown',e=>{
   }
 
   if(e.key==='Escape'){
-    ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay','statsOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
+    ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay','statsOverlay','broadcastOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
     return;
   }
 
@@ -361,4 +373,5 @@ function applyTheme(t){
 }
 
 applyTheme(localStorage.getItem('eixo-theme')||'amber');
+UI.broadcast = localStorage.getItem('eixo-broadcast')!=='off';  // default ON
 render();   // first paint → faction select

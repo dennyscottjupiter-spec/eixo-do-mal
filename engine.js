@@ -486,8 +486,7 @@ function spend(cost){
 }
 function afterAction(){ aiMicro(); checkAll(); render(); }
 
-function endTurn(){
-  if(G.over) return;
+function endTurnResolve(){
   G.collectsThisTurn=0;
   for(const n of G.nations){ n.hitThisCycle=0; n.opsThisTurn={}; }
   for(const n of G.nations) if(n.alive) econTick(n);
@@ -502,6 +501,8 @@ function endTurn(){
       }
     }
   }
+  // snapshot log length before AI acts so we can collect new dramatic entries
+  const logBefore=G.log.length;
   for(const n of G.nations) if(!n.isPlayer&&n.alive) aiMacro(n);
   // surface curated rival highlights: new #1, major tech milestone
   if(!G.over){ for(const n of G.nations.filter(x=>!x.isPlayer&&x.alive)){
@@ -526,7 +527,21 @@ function endTurn(){
   G.imfRate=clamp((G.imfRate||0.08)+(rnd()-0.5)*0.04,0.04,0.16);
   G.turn++; G.actions=CONFIG.actionsPerTurn;
   log('sys',`— TURN ${G.turn} — Your rivals have acted. You have ${CONFIG.actionsPerTurn} fresh actions.`);
-  checkAll(); render();
+  // collect highlight entries added this turn (war/nuke/diplo/intel) in chronological order
+  const highlights=G.log.slice(0, G.log.length-logBefore)
+    .filter(e=>['war','nuke','diplo','intel'].includes(e.type))
+    .reverse();
+  return highlights;
+}
+
+function endTurn(){
+  if(G.over) return;
+  const highlights=endTurnResolve();
+  const finish=()=>{ checkAll(); render(); };
+  if(UI.broadcast!==false && highlights.length>0)
+    playBroadcast(highlights, finish);
+  else
+    finish();
 }
 
 const FLAVOR={
@@ -560,12 +575,18 @@ const H = {
   firstMoves:()=>renderFirstMoves(),
   firstMovesFromMenu:()=>{ $('menuOverlay').classList.add('hidden'); renderFirstMoves(); },
   setTheme:(p)=>{ applyTheme(p); render(); },
+  setBroadcast:(p)=>{
+    UI.broadcast=(p==='on');
+    localStorage.setItem('eixo-broadcast',UI.broadcast?'on':'off');
+    render();
+  },
   closeOverlay:()=>{
     $('menuOverlay').classList.add('hidden');
     $('helpOverlay').classList.add('hidden');
     $('keysOverlay').classList.add('hidden');
     $('firstMovesOverlay').classList.add('hidden');
     $('statsOverlay').classList.add('hidden');
+    $('broadcastOverlay').classList.add('hidden');
   },
   statsFromMenu:()=>{ $('menuOverlay').classList.add('hidden'); renderStats(); },
   saveGame:()=>{
@@ -584,7 +605,7 @@ const H = {
       G=s.G; UI.difficulty=s.UIdiff||'medium'; UI.tab=s.UItab||'build'; UI.attackTarget=s.UIatk||null;
       $('menuOverlay').classList.add('hidden'); $('helpOverlay').classList.add('hidden');
       $('keysOverlay').classList.add('hidden'); $('firstMovesOverlay').classList.add('hidden');
-      $('statsOverlay').classList.add('hidden');
+      $('statsOverlay').classList.add('hidden'); $('broadcastOverlay').classList.add('hidden');
       log('sys','📂 Game loaded from browser storage.'); render();
     } catch(e){ alert('Load failed — save data may be corrupted.'); }
   },

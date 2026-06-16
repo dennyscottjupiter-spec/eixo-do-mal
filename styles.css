@@ -348,6 +348,36 @@ body.theme-vscode .diff-btn.on,body.theme-vscode .tpick.on{
 }
 /* hide TV image until game starts — prevents bleed-through on start screen */
 body:not(.ingame) .tv-frame{visibility:hidden}
+/* ============ WORLD NEWS BROADCAST OVERLAY ============ */
+#broadcastOverlay{
+  background:rgba(4,3,1,.97);flex-direction:column;
+  align-items:center;justify-content:center;z-index:45;
+}
+.bc-box{
+  max-width:640px;width:100%;border:2px solid var(--amber-dim);
+  background:rgba(13,10,4,.96);padding:22px 26px;
+  box-shadow:0 0 40px rgba(240,192,64,.15),inset 0 0 30px rgba(0,0,0,.5);
+}
+.bc-header{
+  font-size:13px;letter-spacing:3px;color:var(--amber-hi);
+  border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px;
+  text-align:center;
+}
+.bc-header::before{content:'📺 '}.bc-header::after{content:' 📺'}
+.bc-body{min-height:140px;display:flex;flex-direction:column;gap:8px}
+.bc-line{
+  padding:6px 0;border-bottom:1px dashed #2c240e;
+  animation:fadein .3s ease;font-size:14px;
+}
+.bc-dots{display:flex;gap:5px;justify-content:center;margin:14px 0 10px}
+.bc-dot{width:8px;height:8px;border:1px solid var(--amber-dim);border-radius:50%;display:inline-block}
+.bc-dot.done{background:var(--amber-dim)}
+.bc-dot.active{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.bc-skip{
+  display:block;margin:10px auto 0;font:inherit;background:transparent;
+  color:var(--amber-dim);border:1px solid var(--line);padding:3px 18px;cursor:pointer;
+}
+.bc-skip:hover{color:var(--amber);border-color:var(--amber-dim)}
 @media(prefers-reduced-motion:reduce){
   .cursor::after,.blink{animation:none}
   .le{animation:none}
