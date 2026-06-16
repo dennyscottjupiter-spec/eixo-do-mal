@@ -139,6 +139,12 @@ function renderDetail(){
 }
 
 function renderCmd(){
+  // multiplayer: show waiting banner when it's another player's turn
+  if(window.MP && MP.enabled && !MP.canAct()){
+    const waiting=G.nations[G.activeSeat||0];
+    $('cmdbar').innerHTML=`<span class="c" style="letter-spacing:2px">⏳ WAITING FOR ${waiting?nm(waiting).toUpperCase():'RIVAL'} TO ACT…</span>`;
+    return;
+  }
   const ct=G.collectsThisTurn||0;
   const RATES=[1.0,0.75,0.5,0.25,0.1];
   const rate=Math.round(RATES[Math.min(ct,RATES.length-1)]*100);

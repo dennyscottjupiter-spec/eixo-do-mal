@@ -131,7 +131,8 @@ function initGame(playerFaction){
   G = {
     turn:1, actions:CONFIG.actionsPerTurn, nations:[], log:[],
     over:false, result:null, streak:0, coalition:false, started:true,
-    difficulty: UI.difficulty||'medium', imfRate:0.08, collectsThisTurn:0
+    difficulty: UI.difficulty||'medium', imfRate:0.08, collectsThisTurn:0,
+    activeSeat:0   // multiplayer: which seat's turn it is
   };
   G.nations.push(newNation(playerFaction,true,null));
   others.forEach((f,i)=>G.nations.push(newNation(f,false,persL[i%persL.length])));
@@ -148,7 +149,7 @@ function initGame(playerFaction){
 }
 
 /* ---------- accessors ---------- */
-const P    = ()=>G.nations[0];
+const P    = ()=>G.nations[(window.MP&&MP.enabled)?MP.seat:0];
 const byId = id=>G.nations.find(n=>n.id===id);
 const nm   = n=>CONFIG.factions[n.faction].n;
 const fb   = n=>CONFIG.factions[n.faction];

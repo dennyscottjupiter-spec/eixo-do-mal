@@ -16,6 +16,7 @@ function renderMenu(){
   <button class="btn cy" data-a="loadGame" title="Load your last saved game." ${!hasSave?'disabled':''}>📂 LOAD GAME${hasSave?'':' <span class="muted">(no save found)</span>'}</button>
   <button class="btn" data-a="helpFromMenu" title="Read the full how-to-play guide — combat, economy, espionage, diplomacy.">❔ HOW TO PLAY</button>
   <button class="btn cy" data-a="firstMovesFromMenu" title="See the phased 10-turn opening guide.">📋 FIRST MOVES</button>
+  <button class="btn cy" data-a="openLobby" title="Host or join an online multiplayer game via Firebase. See FIREBASE-SETUP.md for one-time setup.">🌍 ONLINE MULTIPLAYER</button>
   <button class="btn cy" data-a="statsFromMenu" title="See live standings and statistics for all nations — same view as end-of-game." ${(!G||!G.started||G.over)?'disabled':''}>📊 STATISTICS</button>
   <button class="btn cy" data-a="setBroadcast" data-p="${UI.broadcast!==false?'off':'on'}" title="Toggle the World News broadcast reel that plays after each turn.">${UI.broadcast!==false?'📺 BROADCAST: ON (click to turn off)':'⚡ BROADCAST: OFF (click to turn on)'}</button>
   <button class="btn" data-a="restartGame" title="Abandon this game and start fresh — you will pick a new faction.">🔄 RESTART (new game)</button>
@@ -215,6 +216,7 @@ function renderFactionOverlay(show){
 
 <div style="margin:4px 0 4px;display:flex;gap:8px;flex-wrap:wrap">
   <button class="btn cy" data-a="firstMoves" title="See the phased 10-turn opening guide — great for your first game.">📋 FIRST MOVES</button>
+  <button class="btn cy" data-a="openLobby" title="Host or join an online multiplayer game via Firebase. See FIREBASE-SETUP.md for one-time setup.">🌍 ONLINE</button>
 </div>
 
 <div class="sec">SELECT YOUR NATION</div>
@@ -231,6 +233,7 @@ function renderOver(){
   $('firstMovesOverlay').classList.add('hidden');
   $('statsOverlay').classList.add('hidden');
   $('broadcastOverlay').classList.add('hidden');
+  $('lobbyOverlay').classList.add('hidden');
   o.classList.remove('hidden');
   const R=G.result;
   const sorted=G.nations.slice().sort((a,b)=>score(b)-score(a));
@@ -339,7 +342,7 @@ document.addEventListener('keydown',e=>{
   }
 
   if(e.key==='Escape'){
-    ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay','statsOverlay','broadcastOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
+    ['menuOverlay','helpOverlay','keysOverlay','firstMovesOverlay','statsOverlay','broadcastOverlay','lobbyOverlay'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
     return;
   }
 
