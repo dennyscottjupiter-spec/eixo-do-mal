@@ -56,9 +56,12 @@ const MP = {
       const data=snap.val();
       if(!data||!data.G) return;
       const remote=data.G;
-      // ignore own echo
-      if(remote._writer===this.seat && remote._ver<=this._lastVer) return;
+      // reject stale/replayed snapshots regardless of who wrote them
+      if((remote._ver||0) <= this._lastVer) return;
       this._lastVer=remote._ver||0;
+      sessionStorage.setItem('eixo-mp-ver', this._lastVer);
+      // strip any HTML from log text (defence against injected payloads)
+      if(Array.isArray(remote.log)) remote.log.forEach(e=>{ if(typeof e.text==='string') e.text=e.text.replace(/<[^>]*>/g,''); });
       MP._seats=data.seats||{};
       G=remote;
       UI.tab=UI.tab||'build';
@@ -76,6 +79,9 @@ function mpInit(){
     return false;
   }
   if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  // restore last-known version counter so rejoins don't accept stale snapshots
+  const saved=parseInt(sessionStorage.getItem('eixo-mp-ver')||'0',10);
+  if(saved>MP._lastVer) MP._lastVer=saved;
   return true;
 }
 
@@ -89,6 +95,7 @@ function mpJoinRoom(code, seat, faction, onSuccess, onError){
   if(!mpInit()){ onError('Firebase not available'); return; }
   const db=firebase.database();
   MP.roomCode=code.toUpperCase();
+  if(!/^[A-Z2-9]{6}$/.test(MP.roomCode)){ onError('Invalid room code — must be 6 characters (A-Z, 2-9).'); return; }
   MP.seat=seat;
   MP.ref=db.ref(`rooms/${MP.roomCode}`);
   MP.enabled=true;
@@ -174,7 +181,7 @@ H.hostGame=(p)=>{
   mpHostRoom(code, faction, UI.difficulty||'medium', ()=>{
     $('lobbyOverlay').classList.add('hidden');
     render();
-    log('sys',`🌍 Room created! Share code <b>${code}</b> with your friends. They click ONLINE → JOIN and paste this code.`);
+    log('sys',`🌍 Room created! Share code [${code}] with your friends. They click ONLINE → JOIN and paste this code.`);
   });
 };
 H.joinGame=(p,q)=>{

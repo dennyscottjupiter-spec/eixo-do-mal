@@ -5,6 +5,7 @@
    ===================================================================== */
 const $=id=>document.getElementById(id);
 const REL_ICON={war:'⚔',alliance:'✦',vassal:'♟',master:'⛓',peace:'·'};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 /* Full-screen nuclear blast image — shown on any deployNuke() call */
 function showBlast(){
@@ -52,7 +53,7 @@ function playBroadcast(lines, done){
     timers.push(setTimeout(()=>{
       const div=document.createElement('div');
       div.className=`bc-line ${e.type}`;
-      div.innerHTML=e.text;
+      div.textContent=e.text;
       body.appendChild(div);
       // update progress dots
       const prev=$(`bc-dot-${i-1}`);
@@ -324,7 +325,7 @@ function renderTabContent(){
 
 function renderLog(){
   $('log').innerHTML=G.log.map(e=>
-    `<div class="le ${e.type}"><span class="tt">[T${e.t}]</span>${e.text}</div>`).join('');
+    `<div class="le ${e.type}"><span class="tt">[T${e.t}]</span>${esc(e.text)}</div>`).join('');
 }
 
 function renderRank(){
