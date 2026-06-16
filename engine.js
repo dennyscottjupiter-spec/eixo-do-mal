@@ -47,57 +47,112 @@ function econTick(n){
 /* =====================================================================
    Layer 3: combat, spies, missiles, nukes
    ===================================================================== */
+/* mode: 'ground'|'air'|'marine' — controls which unit pools fight */
 function atkPower(n,units){
   const f=fb(n), pen=n.oilShort?0.5:1;
-  return (units.infantry*1 + units.tank*4*pen + units.jet*6*pen)
+  return ((units.infantry||0)*1 + (units.tank||0)*4*pen + (units.jet||0)*6*pen + (units.marine||0)*3)
          * (n.morale/100) * (f.atk||1) * (hasTech(n,'guided')?1.15:1);
 }
-function defPower(n){
+function defPower(n,mode){
   const f=fb(n), pen=n.oilShort?0.5:1;
-  const lastStand = totalBuildings(n)<=3 ? 1.5 : 1;   // cornered nations fight desperately
+  const lastStand = totalBuildings(n)<=3 ? 1.5 : 1;
+  if(mode==='air'){
+    // air attacks: ground troops don't help much, anti-air (jets+turrets) is the counter
+    return (n.army.jet*6 + n.army.turret*3) * (1 + n.b.bunker*0.03) * (f.def||1) * lastStand;
+  }
+  if(mode==='marine'){
+    // marine landings: turrets halved (beach gaps), bunker bonus halved
+    return (n.army.infantry*1.2 + n.army.tank*5*pen + n.army.jet*5*pen + n.army.marine*3 + n.army.turret*2)
+           * (1 + n.b.bunker*0.025) * (f.def||1) * lastStand;
+  }
+  // ground (default)
   return (n.army.infantry*1.2 + n.army.tank*5*pen + n.army.jet*5*pen + n.army.turret*4)
          * (1 + n.b.bunker*0.05) * (f.def||1) * lastStand;
 }
-function lossCommit(n,commit,p){ for(const k of ['infantry','tank','jet']) n.army[k]-=Math.floor(commit[k]*p); }
-function lossAll(n,p){ for(const k of ['infantry','tank','jet']) n.army[k]-=Math.floor(n.army[k]*p); }
+function lossCommit(n,commit,p){ for(const k of Object.keys(commit)) if(n.army[k]!==undefined) n.army[k]-=Math.floor((commit[k]||0)*p); }
+function lossAll(n,p,keys){ const ks=keys||['infantry','tank','jet']; for(const k of ks) n.army[k]-=Math.floor(n.army[k]*p); }
 function destroyRandomBuilding(n){
   const w={}; for(const k in n.b) if(n.b[k]>0) w[k]=n.b[k];
   const key=weightedPick(w); if(!key) return null;
   n.b[key]--; return CONFIG.buildings[key].n;
 }
 
-/* Full ground assault. pct = fraction of attacker's army committed. */
-function resolveAttack(att,def,pct){
+/* Resolve an attack. mode: 'ground' | 'air' | 'marine' */
+function resolveAttack(att,def,pct,mode){
+  mode=mode||'ground';
   setWar(att,def);
   def.lastAttackedBy = att.id;
   def.hitThisCycle = (def.hitThisCycle||0)+1;
-  const commit={
-    infantry:Math.floor(att.army.infantry*pct),
-    tank:Math.floor(att.army.tank*pct),
-    jet:Math.floor(att.army.jet*pct)
-  };
-  if(commit.infantry+commit.tank+commit.jet===0){
-    log('war',`${nm(att)} tried to attack but has no troops to send. Train soldiers first.`); return false;
-  }
-  const ap=atkPower(att,commit)*(0.9+rnd()*0.2);
-  const dp=defPower(def)   *(0.9+rnd()*0.2);
-  if(ap>dp){
-    lossCommit(att,commit,0.12); lossAll(def,0.30);
-    const loot=Math.floor(def.res.gold*0.10); def.res.gold-=loot; att.res.gold+=loot;
-    const grab=Math.max(2,Math.floor(def.land*0.12)); def.land-=grab; att.land+=grab;
-    const destroyed=[]; const nDest=rint(1,2);
-    for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
-    att.morale=clamp(att.morale+10,20,150); def.morale=clamp(def.morale-15,20,150);
-    log('war',`⚔️ ${nm(att)} WON — broke through ${nm(def)}'s defenses! Looted ${fmt(loot)} gold and seized ${grab} acres`+
-        (destroyed.length?`. Razed: ${destroyed.join(', ')}.`:'.'));
-    checkDestroyed(def);
-    return true;
+
+  // build commit pool by mode
+  let commit={};
+  if(mode==='air'){
+    commit={jet:Math.floor(att.army.jet*pct)};
+    if(commit.jet===0){ log('war',`✈️ ${nm(att)} tried an air strike but has no jets. Train Jet Fighters first.`); return false; }
+  } else if(mode==='marine'){
+    commit={marine:Math.floor(att.army.marine*pct)};
+    if(commit.marine===0){ log('war',`⚓ ${nm(att)} tried a marine assault but has no Marines. Train some first.`); return false; }
   } else {
-    lossCommit(att,commit,0.30); lossAll(def,0.10);
-    att.morale=clamp(att.morale-15,20,150); def.morale=clamp(def.morale+10,20,150);
-    log('war',`🛡️ ${nm(def)} DEFENDED — repelled ${nm(att)}'s assault. The attackers retreated with heavy losses.`);
-    checkDestroyed(att);
-    return false;
+    commit={infantry:Math.floor(att.army.infantry*pct), tank:Math.floor(att.army.tank*pct)};
+    if((commit.infantry||0)+(commit.tank||0)===0){ log('war',`${nm(att)} tried to attack but has no ground forces.`); return false; }
+  }
+
+  const ap=atkPower(att,commit)*(0.9+rnd()*0.2);
+  const dp=defPower(def,mode)  *(0.9+rnd()*0.2);
+
+  if(ap>dp){
+    // ---- WIN ----
+    if(mode==='air'){
+      // air: raze 2–4 buildings, intercept cost (jets lost ∝ defender jets)
+      const jetLoss=Math.floor(commit.jet*(0.05 + def.army.jet*0.003));
+      att.army.jet-=clamp(jetLoss,0,commit.jet);
+      lossAll(def,0.10,['infantry','tank']);
+      const nDest=rint(2,4); const destroyed=[];
+      for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
+      att.morale=clamp(att.morale+8,20,150); def.morale=clamp(def.morale-12,20,150);
+      log('war',`✈️ ${nm(att)} AIR STRIKE SUCCESS — ${nm(def)}'s air defenses failed! Lost ${jetLoss} jets to interception.`+
+          (destroyed.length?` Razed: ${destroyed.join(', ')}.`:' No buildings hit.'));
+      checkDestroyed(def); return true;
+    } else if(mode==='marine'){
+      // marine: seize land 10%, loot 8%, raze 1–2 buildings, bypasses fortifications
+      lossCommit(att,commit,0.15); lossAll(def,0.25,['infantry','tank','marine']);
+      const loot=Math.floor(def.res.gold*0.08); def.res.gold-=loot; att.res.gold+=loot;
+      const grab=Math.max(1,Math.floor(def.land*0.10)); def.land-=grab; att.land+=grab;
+      const nDest=rint(1,2); const destroyed=[];
+      for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
+      att.morale=clamp(att.morale+10,20,150); def.morale=clamp(def.morale-15,20,150);
+      log('war',`⚓ ${nm(att)} MARINE LANDING SUCCESS — amphibious forces bypassed ${nm(def)}'s fortifications! Looted ${fmt(loot)} gold, seized ${grab} acres`+
+          (destroyed.length?`. Razed: ${destroyed.join(', ')}.`:'.'));
+      checkDestroyed(def); return true;
+    } else {
+      // ground: seize land 12%, loot 10%, raze 1–2 buildings
+      lossCommit(att,commit,0.12); lossAll(def,0.30,['infantry','tank','jet']);
+      const loot=Math.floor(def.res.gold*0.10); def.res.gold-=loot; att.res.gold+=loot;
+      const grab=Math.max(2,Math.floor(def.land*0.12)); def.land-=grab; att.land+=grab;
+      const nDest=rint(1,2); const destroyed=[];
+      for(let i=0;i<nDest;i++){ const b=destroyRandomBuilding(def); if(b) destroyed.push(b); }
+      att.morale=clamp(att.morale+10,20,150); def.morale=clamp(def.morale-15,20,150);
+      log('war',`⚔️ ${nm(att)} WON — broke through ${nm(def)}'s defenses! Looted ${fmt(loot)} gold and seized ${grab} acres`+
+          (destroyed.length?`. Razed: ${destroyed.join(', ')}.`:'.'));
+      checkDestroyed(def); return true;
+    }
+  } else {
+    // ---- LOSS ----
+    if(mode==='air'){
+      const jetLoss=Math.floor(commit.jet*(0.25 + def.army.jet*0.005));
+      att.army.jet-=clamp(jetLoss,0,commit.jet);
+      att.morale=clamp(att.morale-10,20,150); def.morale=clamp(def.morale+8,20,150);
+      log('war',`✈️ ${nm(def)} AIR DEFENSE HELD — ${nm(att)}'s jets were repelled, ${jetLoss} shot down. Their AA grid is formidable.`);
+    } else if(mode==='marine'){
+      lossCommit(att,commit,0.35); lossAll(def,0.08,['infantry','tank','marine']);
+      att.morale=clamp(att.morale-15,20,150); def.morale=clamp(def.morale+10,20,150);
+      log('war',`⚓ ${nm(def)} REPELLED THE LANDING — ${nm(att)}'s marines were cut down on the beach. Heavy losses.`);
+    } else {
+      lossCommit(att,commit,0.30); lossAll(def,0.10,['infantry','tank','jet']);
+      att.morale=clamp(att.morale-15,20,150); def.morale=clamp(def.morale+10,20,150);
+      log('war',`🛡️ ${nm(def)} DEFENDED — repelled ${nm(att)}'s assault. The attackers retreated with heavy losses.`);
+    }
+    checkDestroyed(att); return false;
   }
 }
 
@@ -241,7 +296,7 @@ function doBuild(n,key){
 }
 function unitGoldCost(n,key){
   const u=CONFIG.units[key];
-  const mult = key==='spy' ? (fb(n).spyCost||1) : ['infantry','tank','jet'].includes(key) ? (fb(n).trainCost||1) : 1;
+  const mult = key==='spy' ? (fb(n).spyCost||1) : ['infantry','tank','jet','marine'].includes(key) ? (fb(n).trainCost||1) : 1;
   return u.g * u.batch * mult;
 }
 function trainCostOk(n,key){
@@ -327,9 +382,17 @@ function aiConsiderAttack(n){
     if(G.coalition && rel(n,P())==='war' && targets.includes(P())) t=P();
     else t=targets.sort((a,b)=>score(a)-score(b))[0];        // hunt the weakest
   }
-  const commit={infantry:Math.floor(n.army.infantry*0.7),tank:Math.floor(n.army.tank*0.7),jet:Math.floor(n.army.jet*0.7)};
-  if(atkPower(n,commit) >= defPower(t)*needed && (commit.infantry+commit.tank+commit.jet)>20){
-    resolveAttack(n,t,0.7);
+  // pick attack mode: air if lots of jets, marine if lots of marines, else ground
+  let mode='ground';
+  if(n.army.jet>=10 && chance(0.3)) mode='air';
+  else if(n.army.marine>=10 && chance(0.25)) mode='marine';
+  let commit={};
+  if(mode==='air') commit={jet:Math.floor(n.army.jet*0.7)};
+  else if(mode==='marine') commit={marine:Math.floor(n.army.marine*0.7)};
+  else commit={infantry:Math.floor(n.army.infantry*0.7),tank:Math.floor(n.army.tank*0.7)};
+  const commitTotal=Object.values(commit).reduce((s,v)=>s+v,0);
+  if(atkPower(n,commit) >= defPower(t,mode)*needed && commitTotal>10){
+    resolveAttack(n,t,0.7,mode);
     return true;
   }
   return false;
@@ -583,8 +646,9 @@ const H = {
 
   /* ---- war ---- */
   target:(p)=>{ UI.attackTarget=p; render(); },
-  attack:(p)=>{
+  attack:(p,q)=>{
     const t=byId(UI.attackTarget); if(!t||!t.alive) return;
+    const mode=q||'ground';
     const ops=(P().opsThisTurn[t.id]||0);
     if(ops>=CONFIG.maxOpsPerTarget){
       log('war',`⚔️ ${nm(t)} is on HIGH ALERT — you have hit them ${ops} times this turn. Wait until next turn to attack again.`);
@@ -592,7 +656,7 @@ const H = {
     }
     if(!spend(2)) return;
     P().opsThisTurn[t.id]=(ops)+1;
-    resolveAttack(P(),t,parseInt(p,10)/100);
+    resolveAttack(P(),t,parseInt(p,10)/100,mode);
     afterAction();
   },
   scud:()=>{

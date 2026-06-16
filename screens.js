@@ -45,10 +45,12 @@ function renderHelp(){
 </div>
 <div class="sec">COMBAT BASICS</div>
 <div class="muted">
-• Ground assault = you vs their defense. <b>Attack power</b>: infantry×1 + tanks×4 + jets×6, scaled by morale and tech.<br>
+Three attack doctrines — all cost 2 actions:<br>
+• <b>⚔️ GROUND INVASION</b> — infantry + tanks seize land (12%) and loot gold (10%). The standard assault; countered by turrets, bunkers, and high defense nations.<br>
+• <b>✈️ AIR STRIKE</b> — jets bomb 2–4 enemy buildings. <i>No land seized</i>, but destroys infrastructure. Jets risk interception by the defender's jets — the more enemy jets, the higher your losses.<br>
+• <b>⚓ MARINE ASSAULT</b> — amphibious troops bypass half of the defender's turrets and bunker bonuses. Great for cracking fortress nations. Seizes land (10%) and loots gold (8%).<br>
 • <b>Oil shortage</b> cuts tank and jet attack power by 50% — always keep oil positive.<br>
 • <b>Morale</b> multiplies attack (max 150%). It rises slowly in peacetime and drops from defeats, famine, or nuclear strikes.<br>
-• <b>Assaults cost 2 actions</b>. Win → seize land + loot gold. Lose → heavy troop casualties on both sides.<br>
 • You can run at most <b>${CONFIG.maxOpsPerTarget} hostile ops</b> on the same nation per turn (attacks + spy ops combined) — after that they are on HIGH ALERT until next turn.
 </div>
 <div class="sec">ECONOMY &amp; GROWTH</div>

@@ -26,6 +26,7 @@ const CONFIG = {
     jet:      { n:'Jet Fighter',  i:'✈️', g:300, f:10, batch:2,  atk:6, def:5,   fu:1,   ou:2 },
     spy:      { n:'Spy',          i:'🕵️', g:100, f:5,  batch:5,  atk:0, def:0,   fu:0.5, ou:0 },
     turret:   { n:'Turret',       i:'🗼', g:50,  f:0,  batch:5,  atk:0, def:4,   fu:0,   ou:0 },
+    marine:   { n:'Marine',       i:'⚓', g:90,  f:12, batch:5,  atk:3, def:3,   fu:0.8, ou:0.5 },
     scud:     { n:'SCUD Missile', i:'🚀', g:500, f:0,  batch:1,  atk:0, def:0,   fu:0,   ou:0 }
   },
   factions: {
@@ -57,15 +58,15 @@ const CONFIG = {
   // AI personality weight profiles. ratio = attack when myPower >= ratio × targetDefense.
   profiles: {
     aggressive:{ build:{barracks:3,oilField:2,farm:1.5,bank:1,factory:1,bunker:.5,lab:.3},
-                 train:{infantry:2,tank:3,jet:2,spy:.3}, ratio:0.9, spy:.10, acceptAlly:.15 },
+                 train:{infantry:2,tank:3,jet:2,marine:1,spy:.3}, ratio:0.9, spy:.10, acceptAlly:.15 },
     defensive: { build:{bunker:3,farm:2,bank:1,factory:1,oilField:1,barracks:1,lab:.4},
-                 train:{infantry:3,tank:1,jet:1,spy:.5}, ratio:99,  spy:.10, acceptAlly:.60 },
+                 train:{infantry:3,tank:1,jet:1,marine:.5,spy:.5}, ratio:99,  spy:.10, acceptAlly:.60 },
     economic:  { build:{bank:3,factory:3,farm:1.5,oilField:2,barracks:.5,bunker:1,lab:.6},
-                 train:{infantry:1,tank:.5,jet:.5,spy:.3}, ratio:1.5, spy:.10, acceptAlly:.60 },
+                 train:{infantry:1,tank:.5,jet:.5,marine:.3,spy:.3}, ratio:1.5, spy:.10, acceptAlly:.60 },
     espionage: { build:{lab:1.5,bank:1,farm:1.2,factory:1,oilField:1,bunker:1,barracks:.5},
-                 train:{spy:3,infantry:1,tank:.5,jet:.5}, ratio:1.4, spy:.85, acceptAlly:.50 },
+                 train:{spy:3,infantry:1,tank:.5,jet:.5,marine:.3}, ratio:1.4, spy:.85, acceptAlly:.50 },
     balanced:  { build:{farm:1.2,bank:1,factory:1,oilField:1,barracks:1,bunker:1,lab:.5},
-                 train:{infantry:1,tank:1,jet:1,spy:1}, ratio:1.2, spy:.30, acceptAlly:.40 }
+                 train:{infantry:1,tank:1,jet:1,marine:.7,spy:1}, ratio:1.2, spy:.30, acceptAlly:.40 }
   },
   bootLines: [
     'EIXO-OS v2.3 ... terminal link established.',
@@ -118,7 +119,7 @@ function newNation(faction,isPlayer,personality){
     id:faction, faction, isPlayer, personality, alive:true,
     res:{ ...CONFIG.startRes }, land:CONFIG.startLand,
     b:{ oilField:2, farm:3, factory:2, bank:1, barracks:1, bunker:1, lab:0, nuclearFacility:0 },
-    army:{ infantry:50, tank:5, jet:0, spy:5, turret:10, scud:0, warhead:0 },
+    army:{ infantry:50, tank:5, jet:0, spy:5, turret:10, marine:0, scud:0, warhead:0 },
     techs:[], morale:100, relations:{}, intel:{}, nukeProg:0,
     oilShort:false, lastAttackedBy:null, hitThisCycle:0, debt:0, opsThisTurn:{}
   };
@@ -156,7 +157,7 @@ const techOf  = id=>CONFIG.techs.find(t=>t.id===id);
 const totalBuildings = n=>Object.values(n.b).reduce((s,v)=>s+v,0);
 const freeLand = n=>n.land - totalBuildings(n);
 const popCap   = n=>CONFIG.popCapBase + totalBuildings(n)*CONFIG.popCapPerBuilding;
-const troopCnt = n=>n.army.infantry+n.army.tank+n.army.jet;
+const troopCnt = n=>n.army.infantry+n.army.tank+n.army.jet+n.army.marine;
 const troopCap = n=>100 + n.b.barracks*100;
 const rawPower = n=>n.army.infantry + n.army.tank*4 + n.army.jet*6;
 const score    = n=>Math.floor(n.res.gold + n.res.pop*2 + rawPower(n)*3 + n.land*40 + totalBuildings(n)*500 + n.techs.length*1000 - (n.debt||0));
