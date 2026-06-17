@@ -793,5 +793,5 @@ const H = {
     log('eco',`🏦 Repaid ${fmt(amt)} gold to the IMF. Remaining debt: ${fmt(me.debt)} gold.`);
     afterAction();
   },
-  endTurn
+  endTurn: ()=>endTurn()  // live-call so the MP wrapper in multiplayer.js is always used
 };

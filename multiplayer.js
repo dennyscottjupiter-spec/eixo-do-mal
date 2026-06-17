@@ -140,16 +140,21 @@ function mpHostRoom(code, faction, difficulty, onSuccess){
   onSuccess();
 }
 
-/* Override afterAction and endTurn when MP is active */
+/* Override afterAction and endTurn when MP is active.
+   IMPORTANT: use assignments, not function declarations. Function declarations
+   are hoisted to the top of the script — meaning the `const _orig* = X` lines
+   below would capture multiplayer's own overrides (self-reference → infinite
+   recursion → silent RangeError on every player action). Assignments run at
+   the line they appear, so the captures correctly grab engine.js's versions. */
 const _origAfterAction=afterAction;
 const _origEndTurn=endTurn;
 
-function afterAction(){
+afterAction = function(){
   _origAfterAction();
   if(MP.enabled) MP.push();
-}
+};
 
-function endTurn(){
+endTurn = function(){
   if(MP.enabled){
     // only the active seat can end the turn
     if(!MP.canAct()) return;
@@ -171,7 +176,7 @@ function endTurn(){
     G.activeSeat=humanSeats[(curIdx+1)%humanSeats.length];
     MP.push();
   }
-}
+};
 
 /* ---------- Lobby overlay (rendered by renderLobby below) ---------- */
 H.openLobby=()=>renderLobby();
