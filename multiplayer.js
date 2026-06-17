@@ -13,13 +13,13 @@
    Access is governed by Firebase Security Rules, not by key secrecy.
 */
 const FIREBASE_CONFIG = {
-  apiKey:            "PASTE_YOUR_API_KEY_HERE",
-  authDomain:        "PASTE_YOUR_AUTH_DOMAIN_HERE",
-  databaseURL:       "PASTE_YOUR_DATABASE_URL_HERE",
-  projectId:         "PASTE_YOUR_PROJECT_ID_HERE",
-  storageBucket:     "PASTE_YOUR_STORAGE_BUCKET_HERE",
-  messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID_HERE",
-  appId:             "PASTE_YOUR_APP_ID_HERE"
+  apiKey:            "AIzaSyAHwuTSnVhuUCOPm6_p0I_jtCCnpTi0Ayg",
+  authDomain:        "eixo-do-mal.firebaseapp.com",
+  databaseURL:       "https://eixo-do-mal-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "eixo-do-mal",
+  storageBucket:     "eixo-do-mal.firebasestorage.app",
+  messagingSenderId: "414228687405",
+  appId:             "1:414228687405:web:a7ec311285ec044b9326a4"
 };
 
 /* ---------- MP state object ---------- */
@@ -180,8 +180,8 @@ H.hostGame=(p)=>{
   const faction=p||'iran';
   mpHostRoom(code, faction, UI.difficulty||'medium', ()=>{
     $('lobbyOverlay').classList.add('hidden');
-    render();
     log('sys',`🌍 Room created! Share code [${code}] with your friends. They click ONLINE → JOIN and paste this code.`);
+    render();
   });
 };
 H.joinGame=(p,q)=>{
