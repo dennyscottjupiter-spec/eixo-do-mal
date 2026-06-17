@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**EIXO DO MAL** is a 2003-style amber-phosphor terminal strategy game ("world domination" sim). No build step, no framework, no package.json, no tests. Firebase CDN is the only external dependency (online multiplayer only).
+**EIXO DO MAL** is a 2003-style amber-phosphor terminal strategy game ("world domination" sim). No build step, no framework, no package.json. Firebase CDN is the only external dependency (online multiplayer only).
 
 ```
 index.html          — markup only; links all JS files + styles.css
@@ -14,6 +14,7 @@ engine.js           — Layers 2–6: economy, combat, AI, player handlers (~800
 render.js           — Layer 7: core in-game rendering + playBroadcast() (~380 lines)
 screens.js          — Layer 8: overlays, boot screen, click/keyboard, bootstrap (~380 lines)
 multiplayer.js      — Layer 9: Firebase Realtime Database online MP (additive, SP-safe)
+tests.html          — browser smoke-test suite; open at localhost:8080/tests.html
 FIREBASE-SETUP.md   — 5-min guide to wire up Firebase for online play
 old-TV.jpg          — vintage TV image; EVENT LOG is positioned inside its screen cut-out
 nuclear_blast.jpg   — full-screen flash asset used on any nuke detonation
@@ -25,7 +26,8 @@ Scripts load in order (`config.js` → `engine.js` → `render.js` → `screens.
 ## Running / testing
 
 - **Run with a local server** (required for Twemoji flag images and the TV background): `python3 -m http.server 8080` then open `http://localhost:8080/`. Flags are blank on bare `file://` because the CDN asset fetch is blocked.
-- **Verify a change:** pick a faction, take a few actions, watch the EVENT LOG + WORLD RANKING update. No test harness — smoke-testing means playing.
+- **Automated tests:** open `http://localhost:8080/tests.html` — 10 cases covering every core action path (build, train, attack, diplo, endTurn, spend, MP guard). All must be green before committing. The suite loads the real game in a hidden iframe and drives `H` handlers directly against live state.
+- **Verify a change manually:** pick a faction, take a few actions, watch the EVENT LOG + WORLD RANKING update.
 - **Hard-refresh** (Ctrl+Shift+R) after edits — the browser caches JS aggressively.
 - **Cheats for testing:** Konami code (↑↑↓↓←→←→BA) grants +9,999 gold. Useful for fast-forwarding to late-game states (nukes, coalition). Other shortcuts: Space=Collect, X=Explore, 1–7=tabs, Enter=End Turn, ?=Help, Esc=close overlay.
 - **GitHub Pages live URL:** https://dennyscottjupiter-spec.github.io/eixo-do-mal/
@@ -96,6 +98,7 @@ All non-game screens and the DOM wiring live here:
 - Host is authoritative: runs `aiMacro` + end-of-round logic; pushes `G` to Firebase after each action/turn.
 - Non-host clients are pure mirrors; their `afterAction` also pushes local changes.
 - `renderLobby()` provides HOST / JOIN UI. Needs Firebase config in `FIREBASE_CONFIG` block (see `FIREBASE-SETUP.md`).
+- **⚠️ Override pattern (critical):** `afterAction` and `endTurn` are patched here using **assignments** (`afterAction = function(){…}`), NOT `function` declarations. Function declarations are hoisted over the `const _orig* = X` capture lines, making them self-referential (infinite recursion). Assignments run at call-site after the originals are captured. Never change these back to declarations.
 
 ### Win conditions
 
@@ -138,6 +141,9 @@ Three themes, all using CSS design tokens on `body.theme-X`:
 - `v2.0.0` — Total War: Marine unit + ground/air/marine attack doctrines
 - `v3.0.0` — World News: Elifoot-style full-screen turn-end broadcast reel
 - `v4.0.0` — The World Stage: Firebase Realtime Database online multiplayer
+- `v4.1.0-fix-hoisting` — fix: multiplayer.js function declarations → assignments (killed silent infinite recursion on every action + Enter)
+- `v4.1.1-fix-reel` — fix: World News reel holds on last headline with CONTINUE ▸ (Enter) gate instead of auto-closing
+- `v4.1.2-test-suite` — test: iframe-driven smoke-test suite in tests.html (10 cases, all green)
 
 ## Conventions
 
