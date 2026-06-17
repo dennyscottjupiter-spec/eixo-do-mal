@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EIXO DO MAL — Smoke Tests</title>
+  <style>
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    body{ background:#0d0d0d; color:#c8a020; font:14px/1.6 'Courier New',monospace; padding:24px; }
+    h1{ color:#f5c842; margin-bottom:4px; }
+    .sub{ color:#7a5f10; margin-bottom:20px; font-size:12px; }
+    .test{ padding:4px 0; border-bottom:1px solid #1a1600; }
+    .pass::before{ content:'✅ '; }
+    .fail::before{ content:'❌ '; }
+    .fail .name{ color:#e05050; }
+    .detail{ color:#7a5f10; font-size:12px; margin-left:24px; }
+    #summary{ margin-top:20px; padding:10px 16px; border:1px solid; font-size:1.1em; font-weight:bold; display:inline-block; }
+    .all-pass{ color:#4caf50; border-color:#4caf50; }
+    .has-fail{ color:#e05050; border-color:#e05050; }
+  </style>
+</head>
+<body>
+  <h1>🎯 EIXO DO MAL — Smoke Tests</h1>
+  <p class="sub">Open at http://localhost:8080/tests.html (local server required)</p>
+  <div id="out"><div style="color:#7a5f10">⏳ Loading game iframe…</div></div>
+  <div id="summary" style="display:none"></div>
+
+  <!--
+    Hidden iframe loads the REAL game at its full width so all scripts parse
+    identically to actual play. Same-origin (localhost:8080) so contentWindow
+    is accessible.
+
+    IMPORTANT: const/let at the top level of a browser script are NOT properties
+    of window — only var/function-declarations are. This codebase uses const/let
+    everywhere (G, UI, H, CONFIG, MP). We inject a tiny bridge script into the
+    iframe after load that wraps them in a window._X getter/setter object so
+    the test harness can read and mutate them cross-frame.
+  -->
+  <iframe id="game" src="index.html"
+    style="position:fixed;top:-9999px;left:-9999px;width:1280px;height:900px"></iframe>
+
+  <script>
+  'use strict';
+  const iframe = document.getElementById('game');
+  let W;   // iframe.contentWindow
+  let X;   // W._X bridge — exposes G, UI, H, MP, CONFIG from iframe
+  let passed=0, failed=0;
+
+  /* ── output helpers ────────────────────────────────────────── */
+  const out = document.getElementById('out');
+  function log(cls, name, detail=''){
+    const row = document.createElement('div');
+    row.className = `test ${cls}`;
+    row.innerHTML = `<span class="name">${name}</span>`
+      + (detail ? `<div class="detail">${detail}</div>` : '');
+    out.appendChild(row);
+  }
+  function pass(name){ passed++; log('pass', name); }
+  function fail(name, msg){ failed++; log('fail', name, msg); }
+
+  function test(name, fn){
+    try{ fn(); pass(name); }
+    catch(e){ fail(name, e.message); }
+  }
+
+  function eq(a, b, label){
+    if(a !== b) throw new Error(`${label}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+  }
+  function lt(a, b, label){
+    if(a >= b) throw new Error(`${label}: ${a} should be < ${b}`);
+  }
+
+  /* ── reset: fresh single-player game, resources topped up ─── */
+  function reset(){
+    X.G = null;                       // ← uses the bridge setter: G = null in iframe
+    X.UI.broadcast  = false;          // suppress reel — endTurn completes synchronously
+    X.UI.attackTarget = null;
+    X.UI.tab = 'build';
+    W.initGame('iran');               // function declaration → direct window property ✓
+    // top up so no test fails on "not enough gold/food/oil"
+    X.P().res.gold     = 999999;
+    X.P().res.food     = 999999;
+    X.P().res.oil      = 999999;
+    X.P().res.industry = 999999;
+    X.P().land         = 999;         // free land for build tests
+    X.P().b.barracks   = 10;          // troop capacity for train tests
+    X.G.actions = X.CONFIG.actionsPerTurn;
+  }
+
+  function firstRival(){ return X.G.nations.find(n => !n.isPlayer && n.alive); }
+
+  /* ── tests ─────────────────────────────────────────────────── */
+  function runTests(){
+    W = iframe.contentWindow;
+    out.innerHTML = '';
+
+    // Inject bridge: const/let globals are not window properties, but a live
+    // Object.defineProperties getter/setter on window._X gives us cross-frame
+    // read/write access to G, UI, H, MP, CONFIG.
+    const bridge = W.document.createElement('script');
+    bridge.textContent = `
+      Object.defineProperty(window, '_X', {
+        value: Object.defineProperties({}, {
+          G:      { get(){ return G; },      set(v){ G=v; },      enumerable:true },
+          UI:     { get(){ return UI; },                           enumerable:true },
+          H:      { get(){ return H; },                           enumerable:true },
+          MP:     { get(){ return MP; },                           enumerable:true },
+          CONFIG: { get(){ return CONFIG; },                       enumerable:true },
+          P:      { value(){ return P(); },                        enumerable:true },
+        }),
+        configurable: true
+      });
+    `;
+    W.document.head.appendChild(bridge);
+    X = W._X;
+
+    // ── 1 ── afterAction() recursion regression ──────────────────
+    test('afterAction() runs without throw  [regression: hoisting = infinite recursion]', ()=>{
+      reset();
+      // Before the fix this threw: RangeError: Maximum call stack size exceeded
+      W.afterAction();
+    });
+
+    // ── 2 ── endTurn() global (keyboard / Enter path) ────────────
+    test('endTurn() GLOBAL increments turn + resets actions  [keyboard / Enter path]', ()=>{
+      reset();
+      const t0 = X.G.turn;
+      W.endTurn();
+      eq(X.G.turn, t0 + 1, 'G.turn');
+      eq(X.G.actions, X.CONFIG.actionsPerTurn, 'actions after endTurn');
+    });
+
+    // ── 3 ── H.endTurn() (END TURN button path) ──────────────────
+    test('H.endTurn() (button) increments turn + resets actions  [must match test 2]', ()=>{
+      reset();
+      const t0 = X.G.turn;
+      X.H.endTurn();
+      eq(X.G.turn, t0 + 1, 'G.turn');
+      eq(X.G.actions, X.CONFIG.actionsPerTurn, 'actions after H.endTurn');
+    });
+
+    // ── 4 ── spend(1) happy path ──────────────────────────────────
+    test('spend(1) decrements G.actions by 1', ()=>{
+      reset();
+      const a0 = X.G.actions;
+      const ok = W.spend(1);
+      if(!ok) throw new Error('spend(1) returned false — actions were 0?');
+      eq(X.G.actions, a0 - 1, 'G.actions');
+    });
+
+    // ── 5 ── spend(99) when short ────────────────────────────────
+    test('spend(99) returns false + leaves actions unchanged  [graceful gate]', ()=>{
+      reset();
+      X.G.actions = 3;   // definitely less than 99
+      const a0 = X.G.actions;
+      const ok = W.spend(99);
+      if(ok !== false) throw new Error('spend(99) should have returned false');
+      eq(X.G.actions, a0, 'G.actions unchanged');
+    });
+
+    // ── 6 ── H.build deducts gold + 1 action ─────────────────────
+    test('H.build("farm") deducts gold + costs 1 action', ()=>{
+      reset();
+      // farm = 250g (cheapest building). Player has 999999g so it will always succeed.
+      const g0 = X.P().res.gold, a0 = X.G.actions;
+      X.H.build('farm');
+      lt(X.P().res.gold, g0, 'gold');          // must have gone down
+      eq(X.G.actions, a0 - 1, 'G.actions');
+    });
+
+    // ── 7 ── H.train raises army + deducts gold + 1 action ───────
+    test('H.train("infantry") raises army.infantry + deducts gold + costs 1 action', ()=>{
+      reset();
+      const inf0 = X.P().army.infantry, g0 = X.P().res.gold, a0 = X.G.actions;
+      X.H.train('infantry');
+      if(X.P().army.infantry <= inf0)
+        throw new Error(`army.infantry did not rise: still ${X.P().army.infantry}`);
+      lt(X.P().res.gold, g0, 'gold');
+      eq(X.G.actions, a0 - 1, 'G.actions');
+    });
+
+    // ── 8 ── H.diplo war costs 1 action + sets relation ──────────
+    test('H.diplo(rival,"war") costs 1 action + sets war relation', ()=>{
+      reset();
+      const rival = firstRival();
+      if(!rival) throw new Error('no rival found — G.nations < 2?');
+      const a0 = X.G.actions;
+      X.H.diplo(rival.id, 'war');
+      eq(X.G.actions, a0 - 1, 'G.actions');
+      const rel = X.P().relations[rival.id];
+      if(rel !== 'war') throw new Error(`relation is "${rel}", expected "war"`);
+    });
+
+    // ── 9 ── H.attack costs 2 actions ────────────────────────────
+    test('H.attack("100","ground") costs 2 actions', ()=>{
+      reset();
+      const rival = firstRival();
+      if(!rival) throw new Error('no rival found');
+      X.UI.attackTarget = rival.id;
+      const a0 = X.G.actions;
+      X.H.attack('100', 'ground');
+      eq(X.G.actions, a0 - 2, 'G.actions  (attack costs 2)');
+    });
+
+    // ── 10 ── MP stays off in single-player ───────────────────────
+    test('MP.enabled is false after fresh single-player game', ()=>{
+      reset();
+      if(X.MP.enabled !== false)
+        throw new Error(`MP.enabled = ${X.MP.enabled}, expected false`);
+    });
+
+    /* ── summary ─────────────────────────────────────────────── */
+    const total = passed + failed;
+    const sumEl = document.getElementById('summary');
+    sumEl.style.display = 'inline-block';
+    if(failed === 0){
+      sumEl.className = 'all-pass';
+      sumEl.textContent = `✅  ALL ${total} TESTS PASSED`;
+    } else {
+      sumEl.className = 'has-fail';
+      sumEl.textContent = `❌  ${failed} FAILURE${failed>1?'S':''} / ${total} TESTS`;
+    }
+  }
+
+  iframe.addEventListener('load', ()=>{ setTimeout(runTests, 300); });
+  </script>
+</body>
+</html>
