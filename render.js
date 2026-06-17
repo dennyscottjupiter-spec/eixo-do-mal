@@ -31,8 +31,13 @@ function playBroadcast(lines, done){
   const timers=[];
   const DELAY=2200;
 
+  function onKey(ev){
+    if(ev.key==='Enter'||ev.key==='Escape'){ ev.preventDefault(); ev.stopPropagation(); dismiss(); }
+  }
+
   function dismiss(){
     timers.forEach(t=>clearTimeout(t));
+    document.removeEventListener('keydown', onKey, true);
     el.classList.add('hidden');
     el.innerHTML='';
     done();
@@ -61,7 +66,12 @@ function playBroadcast(lines, done){
       const cur=$(`bc-dot-${i}`);
       if(cur) cur.classList.add('active');
       if(i===lines.length-1){
-        timers.push(setTimeout(()=>{ cur&&cur.classList.replace('active','done'); dismiss(); }, DELAY));
+        // last headline: hold here until player dismisses (no auto-close)
+        timers.push(setTimeout(()=>{
+          cur && cur.classList.replace('active','done');
+          const b=$('bc-skip'); if(b) b.textContent='CONTINUE ▸  (Enter)';
+          document.addEventListener('keydown', onKey, true); // capture phase owns Enter
+        }, DELAY));
       }
     }, i*DELAY));
   });

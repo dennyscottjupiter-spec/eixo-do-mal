@@ -348,7 +348,8 @@ document.addEventListener('keydown',e=>{
 
   if(e.key==='Enter'&&G&&G.started&&!G.over&&!e.repeat){
     const tag=(e.target&&e.target.tagName)||'';
-    if(tag!=='BUTTON'&&tag!=='INPUT') endTurn();
+    const reelOpen=!$('broadcastOverlay').classList.contains('hidden');
+    if(tag!=='BUTTON'&&tag!=='INPUT'&&!reelOpen) endTurn();
   }
 
   if(!G||!G.started||G.over||e.repeat) return;
